@@ -19,11 +19,18 @@ class MapStorage : public AbstractStorage {
     auto typed_vals = third_party::SArray<Val>(vals);
     CHECK_EQ(typed_keys.size(), typed_vals.size());
     // TODO
+    for (uint32_t i = 0; i < typed_keys.size(); i++) {
+        storage_[typed_keys[i]] = typed_vals[i];
+    }
   }
 
   virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) override {
     third_party::SArray<Val> reply_vals(typed_keys.size());
     // TODO
+    for (uint32_t i = 0; i < typed_keys.size(); i++) {
+        auto k = typed_keys[i];
+        reply_vals[i] = storage_[k];
+    }
     return third_party::SArray<char>(reply_vals);
   }
 
