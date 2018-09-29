@@ -7,7 +7,7 @@
 namespace csci5570 {
 
 class PendingBuffer {
- public:
+  public:
   /**
    * Return the pending requests at the specific progress clock
    */
@@ -20,6 +20,9 @@ class PendingBuffer {
    * Return the number of pending requests at the specific progress
    */
   virtual int Size(const int progress);
+
+  private:
+  std::map<int, std::vector<Message>> buffer_;
 };
 
 }  // namespace csci5570

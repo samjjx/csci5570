@@ -19,12 +19,20 @@ AbstractModel* ServerThread::GetModel(uint32_t model_id) {
 
 ThreadsafeQueue<Message>* ServerThread::GetWorkQueue() {
     return &work_queue_;
-};
+}
+
+uint32_t ServerThread::GetServerId() {
+    return id_;
+}
 
 void ServerThread::Main() {
     while(true) {
         Message msg;
         work_queue_.WaitAndPop(&msg);
+        // is this necessary?
+//        if (msg.meta.recver != id_) {
+//            return;
+//        }
         if (msg.meta.flag == Flag::kExit) {
             break;
         }
@@ -38,12 +46,14 @@ void ServerThread::Main() {
             auto* model = GetModel(model_id);
             model->Add(msg);
         }
-        if (msg.meta.flag
-
-        == Flag::kGet) {
+        if (msg.meta.flag == Flag::kGet) {
             uint32_t model_id = msg.meta.model_id;
             auto* model = GetModel(model_id);
             model->Get(msg);
+        }
+        if (msg.meta.flag == Flag::kResetWorkerInModel) {
+            auto* model = GetModel(msg.meta.model_id);
+            model->ResetWorker(msg);
         }
     }
 }
