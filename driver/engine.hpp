@@ -3,6 +3,12 @@
 #include <vector>
 
 #include "base/abstract_partition_manager.hpp"
+#include "server/abstract_model.hpp"
+#include "server/consistency/ssp_model.hpp"
+#include "server/consistency/asp_model.hpp"
+#include "server/consistency/bsp_model.hpp"
+#include "server/abstract_storage.hpp"
+#include "server/map_storage.hpp"
 #include "base/node.hpp"
 #include "comm/mailbox.hpp"
 #include "comm/sender.hpp"
@@ -87,7 +93,38 @@ class Engine {
   template <typename Val>
   uint32_t CreateTable(std::unique_ptr<AbstractPartitionManager> partition_manager, ModelType model_type,
                        StorageType storage_type, int model_staleness = 0) {
-    // TODO
+    // TODO: support other type of model and storage
+    // 1. Assign a table id (incremental and consecutive)
+    uint32_t model_id = model_count_++;
+    // 2. Register the partition manager to the model
+    RegisterPartitionManager(model_id, std::move(partition_manager));
+    // 3. Register model for each local server thread
+    using StoragePtr = std::unique_ptr<AbstractStorage>;
+    using ModelPtr = std::unique_ptr<AbstractModel>;
+    for (auto& server_thread : server_thread_group_) {
+      StoragePtr storage;
+      ModelPtr model;
+      ThreadsafeQueue<Message>* reply_queue = sender_->GetMessageQueue();
+      switch(storage_type) {
+        case StorageType::Map:
+          storage = std::move(static_cast<StoragePtr>(new MapStorage<double>()));
+          break;
+        default:
+          storage = std::move(static_cast<StoragePtr>(new MapStorage<double>()));
+          break;
+      }
+      switch(model_type) {
+        case ModelType::SSP:
+          model = std::move(static_cast<ModelPtr>(
+                  new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
+          break;
+        default:
+          model = std::move(static_cast<ModelPtr>(
+                  new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
+          break;
+      }
+      server_thread.RegisterModel(model_id, std::move(model));
+    }
   }
 
   /**
