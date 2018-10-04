@@ -8,35 +8,83 @@
 namespace csci5570 {
 
 SimpleIdMapper::SimpleIdMapper(Node node, const std::vector<Node>& nodes) {
-  // TODO
+  node_ = node;
+  nodes_ = nodes;
 }
 
 uint32_t SimpleIdMapper::GetNodeIdForThread(uint32_t tid) {
-  // TODO
+  return tid / kMaxThreadsPerNode;
 }
 
 void SimpleIdMapper::Init(int num_server_threads_per_node) {
-  // TODO
+  if (num_server_threads_per_node < 1 || num_server_threads_per_node > kWorkerHelperThreadId) {
+    throw std::invalid_argument("num_server_threads_per_node should be in [1, kWorkerHelperThreadId]");
+  }
+  for (auto node : nodes_) {
+    uint32_t node_id = node.id;
+    uint32_t id_base = kMaxThreadsPerNode * node_id;
+    // server_threads
+    std::vector<uint32_t> server_thread_ids;
+    for (uint32_t sid = id_base; sid < id_base + num_server_threads_per_node; sid++) {
+      server_thread_ids.push_back(sid);
+    }
+    node2server_[node_id] = server_thread_ids;
+    // worker_threads
+    std::vector<uint32_t> worker_thread_ids;
+    for (uint32_t wid = id_base + kWorkerHelperThreadId; wid < id_base + kMaxBgThreadsPerNode; wid++) {
+      worker_thread_ids.push_back(wid);
+    }
+    node2worker_helper_[node_id] = worker_thread_ids;
+    // user_threads
+    std::set<uint32_t> user_thread_ids;
+    node2worker_[node_id] = user_thread_ids;
+  }
 }
 
-uint32_t SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
-  // TODO
+int SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
+  if (node2worker_[node_id].size() >= kMaxThreadsPerNode - kMaxBgThreadsPerNode) {
+    return -1;
+  }
+  int min_id = kMaxThreadsPerNode * node_id + kMaxBgThreadsPerNode;
+  int max_id = kMaxThreadsPerNode * (node_id + 1);
+  for (int tid = min_id; tid < max_id; tid++) {
+    if (node2worker_[node_id].find(tid) == node2worker_[node_id].end()) {
+      node2worker_[node_id].insert(tid);
+      return tid;
+    }
+  }
+  return -1;
 }
+
 void SimpleIdMapper::DeallocateWorkerThread(uint32_t node_id, uint32_t tid) {
-  // TODO
+  if (node2worker_[node_id].find(tid) == node2worker_[node_id].end()) {
+    return;
+  }
+  node2worker_[node_id].erase(tid);
 }
 
 std::vector<uint32_t> SimpleIdMapper::GetServerThreadsForId(uint32_t node_id) {
-  // TODO
+  return node2server_[node_id];
 }
+
 std::vector<uint32_t> SimpleIdMapper::GetWorkerHelperThreadsForId(uint32_t node_id) {
-  // TODO
+  return node2worker_helper_[node_id];
 }
+
 std::vector<uint32_t> SimpleIdMapper::GetWorkerThreadsForId(uint32_t node_id) {
-  // TODO
+  std::vector<uint32_t> worker_threads;
+  for (auto tid : node2worker_[node_id]) {
+    worker_threads.push_back(tid);
+  }
+  return worker_threads;
 }
+
 std::vector<uint32_t> SimpleIdMapper::GetAllServerThreads() {
-  // TODO
+  std::vector<uint32_t> all_threads;
+  for (auto& pair : node2server_) {
+    all_threads.insert(all_threads.end(), pair.second.begin(), pair.second.end());
+  }
+  return all_threads;
 }
 
 const uint32_t SimpleIdMapper::kMaxNodeId;
