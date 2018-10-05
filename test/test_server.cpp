@@ -3,7 +3,7 @@
 
 #include "server/server_thread.hpp"
 #include "server/server_thread_group.hpp"
-#include "server/ssp_model.hpp"
+#include "server/consistency/ssp_model.hpp"
 #include "server/map_storage.hpp"
 
 #include <iostream>

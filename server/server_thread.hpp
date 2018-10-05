@@ -19,6 +19,8 @@ class ServerThread : public Actor {
 
   ThreadsafeQueue<Message>* GetWorkQueue();
 
+  uint32_t GetServerId();
+
  protected:
   virtual void Main() override;                                  // where the actor polls events and reacts
 

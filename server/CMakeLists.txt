@@ -9,6 +9,6 @@ file(GLOB server-src-files
   util/pending_buffer.cpp
   )
 
-add_library(server-objs OBJECT ${server-src-files})
+add_library(server-objs OBJECT ${server-src-files} server_thread_group.hpp)
 set_property(TARGET server-objs PROPERTY CXX_STANDARD 11)
 add_dependencies(server-objs ${external_project_dependencies})
