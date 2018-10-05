@@ -40,9 +40,9 @@ void Engine::CreateMailbox() {
 void Engine::StartServerThreads() {
   std::vector<uint32_t> local_servers = id_mapper_->GetServerThreadsForId(node_.id);
   for (uint32_t sid : local_servers) {
-    ServerThread server_thread(sid);
-    server_thread.Start();
-    server_thread_group_.push_back(server_thread);
+    std::unique_ptr<ServerThread>server_thread (new ServerThread(sid));
+    server_thread->Start();
+    server_thread_group_.push_back(std::move(server_thread));
   }
 }
 void Engine::StartWorkerThreads() {
@@ -65,7 +65,7 @@ void Engine::StopEverything() {
 }
 void Engine::StopServerThreads() {
   for(auto& server_thread : server_thread_group_) {
-    server_thread.Stop();
+    server_thread->Stop();
   }
 }
 void Engine::StopWorkerThreads() {
@@ -90,7 +90,7 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
     std::vector<uint32_t> workers = pair.second;
     // register workers
     for (auto worker_id : workers) {
-      int thread_id = id_mapper_.AllocateWorkerThread(node_id);
+      int thread_id = id_mapper_->AllocateWorkerThread(node_id);
       if (thread_id == -1) {
         throw "Allocate worker thread failed!";
       }

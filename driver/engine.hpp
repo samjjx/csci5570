@@ -123,7 +123,7 @@ class Engine {
                   new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
           break;
       }
-      server_thread.RegisterModel(model_id, std::move(model));
+      server_thread->RegisterModel(model_id, std::move(model));
     }
   }
 
@@ -182,7 +182,7 @@ class Engine {
   std::unique_ptr<AbstractCallbackRunner> callback_runner_;
   std::unique_ptr<AbstractWorkerThread> worker_thread_;
   // server elements
-  std::vector<ServerThread> server_thread_group_;
+  std::vector<std::unique_ptr<ServerThread>> server_thread_group_;
   size_t model_count_ = 0;
 };
 
