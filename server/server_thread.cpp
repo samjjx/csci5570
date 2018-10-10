@@ -17,12 +17,8 @@ AbstractModel* ServerThread::GetModel(uint32_t model_id) {
     }
 }
 
-ThreadsafeQueue<Message>* ServerThread::GetWorkQueue() {
-    return &work_queue_;
-}
-
 uint32_t ServerThread::GetServerId() {
-    return id_;
+    return GetId();
 }
 
 void ServerThread::Main() {

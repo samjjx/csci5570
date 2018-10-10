@@ -11,7 +11,7 @@
 #include "driver/worker_spec.hpp"
 #include "server/server_thread.hpp"
 #include "worker/abstract_callback_runner.hpp"
-#include "worker/worker_thread.hpp"
+#include "worker/worker_helper_thread.hpp"
 
 namespace csci5570 {
 // TODO
@@ -42,11 +42,18 @@ void Engine::StartServerThreads() {
   for (uint32_t sid : local_servers) {
     std::unique_ptr<ServerThread>server_thread (new ServerThread(sid));
     server_thread->Start();
+    mailbox_->RegisterQueue(sid, server_thread->GetWorkQueue());
     server_thread_group_.push_back(std::move(server_thread));
   }
 }
 void Engine::StartWorkerThreads() {
-  // TODO
+  std::vector<uint32_t> local_workers = id_mapper_->GetWorkerHelperThreadsForId(node_.id);
+  for (uint32_t wid : local_workers) {
+    std::unique_ptr<WorkerHelperThread>worker_thread (new WorkerHelperThread(wid, callback_runner_.get()));
+    worker_thread->Start();
+    mailbox_->RegisterQueue(wid, worker_thread->GetWorkQueue());
+    worker_thread_group_.push_back(std::move(worker_thread));
+  }
 }
 void Engine::StartMailbox() {
   mailbox_->Start();
@@ -65,11 +72,15 @@ void Engine::StopEverything() {
 }
 void Engine::StopServerThreads() {
   for(auto& server_thread : server_thread_group_) {
+    // TODO: send exit message
     server_thread->Stop();
   }
 }
 void Engine::StopWorkerThreads() {
-  // TODO
+  for(auto& worker_thread : worker_thread_group_) {
+    // TODO: send exit message
+    worker_thread->Stop();
+  }
 }
 void Engine::StopSender() {
   sender_->Stop();

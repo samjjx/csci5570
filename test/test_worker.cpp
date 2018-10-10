@@ -2,12 +2,41 @@
 
 #include "worker/app_blocker.hpp"
 #include "worker/kv_client_table.hpp"
-#include "worker/simple_range_manager.hpp"
-
+//#include "worker/simple_range_manager.hpp"
 #include <atomic>
 #include <thread>
 
 namespace csci5570 {
+class SimpleRangeManager : public AbstractPartitionManager {
+public:
+  SimpleRangeManager(const std::vector<uint32_t>& server_thread_ids, int split)
+          : AbstractPartitionManager(server_thread_ids), split_(split) {}
+
+  void Slice(const Keys& keys, std::vector<std::pair<int, Keys>>* sliced) const override {
+    size_t n = keys.size();
+    sliced->resize(2);
+    auto pos = std::lower_bound(keys.begin(), keys.end(), split_) - keys.begin();
+    sliced->at(0).first = 0;
+    sliced->at(0).second = keys.segment(0, pos);
+    sliced->at(1).first = 1;
+    sliced->at(1).second = keys.segment(pos, n);
+  }
+
+  void Slice(const KVPairs& kvs, std::vector<std::pair<int, KVPairs>>* sliced) const override {
+    size_t n = kvs.first.size();
+    sliced->resize(2);
+    auto pos = std::lower_bound(kvs.first.begin(), kvs.first.end(), split_) - kvs.first.begin();
+    sliced->at(0).first = server_thread_ids_[0];
+    sliced->at(0).second.first = kvs.first.segment(0, pos);
+    sliced->at(0).second.second = kvs.second.segment(0, pos);
+    sliced->at(1).first = server_thread_ids_[1];
+    sliced->at(1).second.first = kvs.first.segment(pos, n);
+    sliced->at(1).second.second = kvs.second.segment(pos, n);
+  }
+
+private:
+  int split_ = 0;
+};
 
 void TestBgWorker() {
   // Create app_blocker and worker_helper_thread
@@ -17,7 +46,7 @@ void TestBgWorker() {
   std::atomic<bool> ready(false);
 
   // Create a worker thread which runs the KVClientTable
-  SimpleRangeManager range_manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangeManager range_manager({1, 2}, 1);
   ThreadsafeQueue<Message> downstream_queue;
 
   const uint32_t kTestAppThreadId1 = 1;

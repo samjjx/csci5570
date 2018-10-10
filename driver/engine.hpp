@@ -17,7 +17,7 @@
 #include "driver/worker_spec.hpp"
 #include "server/server_thread.hpp"
 #include "worker/abstract_callback_runner.hpp"
-#include "worker/worker_thread.hpp"
+#include "worker/worker_helper_thread.hpp"
 
 namespace csci5570 {
 
@@ -180,7 +180,8 @@ class Engine {
   std::unique_ptr<Sender> sender_;
   // worker elements
   std::unique_ptr<AbstractCallbackRunner> callback_runner_;
-  std::unique_ptr<AbstractWorkerThread> worker_thread_;
+//  std::unique_ptr<WorkerThread> worker_thread_;
+  std::vector<std::unique_ptr<WorkerHelperThread>> worker_thread_group_;
   // server elements
   std::vector<std::unique_ptr<ServerThread>> server_thread_group_;
   size_t model_count_ = 0;

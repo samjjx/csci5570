@@ -17,15 +17,12 @@ class ServerThread : public Actor {
   void RegisterModel(uint32_t model_id, std::unique_ptr<AbstractModel>&& model);
   AbstractModel* GetModel(uint32_t model_id);
 
-  ThreadsafeQueue<Message>* GetWorkQueue();
-
   uint32_t GetServerId();
 
  protected:
   virtual void Main() override;                                  // where the actor polls events and reacts
 
   std::unordered_map<uint32_t, std::unique_ptr<AbstractModel>> models_;
-  ThreadsafeQueue<Message> work_queue_;
 };
 
 }  // namespace csci5570
