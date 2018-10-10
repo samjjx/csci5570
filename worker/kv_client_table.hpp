@@ -10,6 +10,7 @@
 
 #include <cinttypes>
 #include <vector>
+#include <iostream>
 
 namespace csci5570 {
 
