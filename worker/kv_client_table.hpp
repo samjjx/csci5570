@@ -36,64 +36,14 @@ class KVClientTable {
         partition_manager_(partition_manager),
         callback_runner_(callback_runner){};
 
-
-
-
-
   // ========== API ========== //
   void Clock();
-
-  // what ¿
-
   // vector version
-  void Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {
-      // test code keys {3,4,5,6} -> {3},{4,5,6}
-
-      Message msg;
-      msg.meta.flag = Flag::kAdd; // indicate Add operation to server thread
-      msg.meta.sender = this->app_thread_id_; //sender_id
-      uint32_t server_threads_num = partition_manager_->GetNumServers();
-      std::vector<uint32_t> server_threads_id = partition_manager_->GetServerThreadIds();
-      partition_manager_->Slice(keys, vals); //partition keys into slices
-      msg.data = vals; // vals -> data
-       while ( server_threads_num ) {
-          msg.meta.recver = server_threads_id[server_threads_num-1];
-          msg.meta.model_id = model_id_;
-          sender_queue_->Push(msg);
-          server_threads_num--;
-      }
-  }
-  void Get(const std::vector<Key>& keys, std::vector<Val>* vals) {
-      // all tasks done, get sth user need from server
-
-      callback_runner_->RegisterRecvFinishHandle(app_thread_id_, model_id_, this->FinalResult());
-      // implement callback runner
-
-      // lol discussion
-
-  }
+  void Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {}
+  void Get(const std::vector<Key>& keys, std::vector<Val>* vals) {}
   // sarray version
-  void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {
-      Message msg;
-      msg.meta.flag = Flag::kAdd; // indicate Add operation to server thread
-      msg.meta.sender = this->app_thread_id_; //sender_id
-      uint32_t server_threads_num = partition_manager_->GetNumServers();
-      std::vector<uint32_t> server_threads_id = partition_manager_->GetServerThreadIds();
-      partition_manager_->Slice(keys, vals); //partition keys into slices
-      // partition_manager slice function has 2 versions : vector && SArray
-      msg.data = vals; // vals -> data
-      while ( server_threads_num ) {
-          msg.meta.recver = server_threads_id[server_threads_num-1];
-          msg.meta.model_id = model_id_;
-          sender_queue_->Push(msg);
-          server_threads_num--;
-      }
-
-
-  }
-  void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals) {
-      callback_runner_->RegisterRecvFinishHandle(app_thread_id_, model_id_, this->FinalResult());
-  }
+  void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {}
+  void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals) {}
   // ========== API ========== //
 
  private:
@@ -103,8 +53,6 @@ class KVClientTable {
   ThreadsafeQueue<Message>* const sender_queue_;             // not owned
   AbstractCallbackRunner* const callback_runner_;            // not owned
   const AbstractPartitionManager* const partition_manager_;  // not owned
-
-  void FinalResult();
 
 };  // class KVClientTable
 
