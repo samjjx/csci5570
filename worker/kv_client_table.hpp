@@ -9,6 +9,7 @@
 
 #include <cinttypes>
 #include <vector>
+#include <iostream>
 
 namespace csci5570 {
 
@@ -20,6 +21,7 @@ namespace csci5570 {
  */
 template <typename Val>
 class KVClientTable {
+    using KVPairs = std::pair<third_party::SArray<Key>, third_party::SArray<double>>;
  public:
   /**
    * @param app_thread_id       user thread id
@@ -39,7 +41,29 @@ class KVClientTable {
   // ========== API ========== //
   void Clock();
   // vector version
-  void Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {}
+  void Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {
+    third_party::SArray<Key> key2array;
+    third_party::SArray<Val> val2array;
+    for(auto i=0; i<keys.size();i++){
+      key2array.push_back(keys[i]);
+    }
+    for(auto i=0; i<vals.size();i++){
+      val2array.push_back(vals[i]);
+    }
+    std::vector<std::pair<int, KVPairs>> sliced;
+    partition_manager_->Slice(std::make_pair(key2array, val2array), &sliced);
+
+    for(auto i =0; i< sliced.size();i++){
+      Message msg;
+      msg.AddData(sliced[i].second.first);
+      msg.AddData(sliced[i].second.second);
+      msg.meta.sender = app_thread_id_;
+      msg.meta.recver = sliced[i].first;
+      msg.meta.flag = Flag::kAdd;
+      msg.meta.model_id = model_id_;
+      sender_queue_->Push(msg);
+    }
+  }
   void Get(const std::vector<Key>& keys, std::vector<Val>* vals) {}
   // sarray version
   void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {}
