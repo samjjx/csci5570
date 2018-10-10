@@ -66,7 +66,21 @@ class KVClientTable {
   }
   void Get(const std::vector<Key>& keys, std::vector<Val>* vals) {}
   // sarray version
-  void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {}
+  void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {
+    std::vector<std::pair<int, KVPairs>> sliced;
+    partition_manager_->Slice(std::make_pair(keys, vals), &sliced);
+
+    for(auto i =0; i< sliced.size();i++){
+      Message msg;
+      msg.AddData(sliced[i].second.first);
+      msg.AddData(sliced[i].second.second);
+      msg.meta.sender = app_thread_id_;
+      msg.meta.recver = sliced[i].first;
+      msg.meta.flag = Flag::kAdd;
+      msg.meta.model_id = model_id_;
+      sender_queue_->Push(msg);
+    }
+  }
   void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals) {}
   // ========== API ========== //
 
