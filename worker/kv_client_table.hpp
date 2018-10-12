@@ -73,16 +73,6 @@ class KVClientTable {
   void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals) {
     std::vector<std::pair<int, Keys>> sliced_keys;
     partition_manager_->Slice(keys, &sliced_keys);
-    for (auto& server_keys : sliced_keys) {
-      Message m;
-      m.meta.flag = Flag::kGet;
-      m.meta.model_id = model_id_;
-      // QUESTION: should I use app_thread_id_?
-      m.meta.sender = app_thread_id_;
-      m.meta.recver = server_keys.first;
-      m.AddData(server_keys.second);
-      sender_queue_->Push(m);
-    }
     std::map<Key, Val> cache;
     callback_runner_->RegisterRecvHandle(app_thread_id_, model_id_, [&cache](Message& msg) {
       Keys data_keys(msg.data[0]);
@@ -95,6 +85,16 @@ class KVClientTable {
 
     });
     callback_runner_->NewRequest(app_thread_id_, model_id_, sliced_keys.size());
+    for (auto& server_keys : sliced_keys) {
+      Message m;
+      m.meta.flag = Flag::kGet;
+      m.meta.model_id = model_id_;
+      // QUESTION: should I use app_thread_id_?
+      m.meta.sender = app_thread_id_;
+      m.meta.recver = server_keys.first;
+      m.AddData(server_keys.second);
+      sender_queue_->Push(m);
+    }
     callback_runner_->WaitRequest(app_thread_id_, model_id_);
     for (auto k : keys) {
       vals->push_back(cache[k]);

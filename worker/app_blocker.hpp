@@ -17,13 +17,11 @@ public:
   AppBlocker() {}
   void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id,
                           const std::function<void(Message&)>& recv_handle) override {
-    // TODO
     std::lock_guard<std::mutex> lk(mu_);
     recv_handles_[app_thread_id] = recv_handle;
   }
   void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id,
                                 const std::function<void()>& recv_finish_handle) override {
-    // TODO
     std::lock_guard<std::mutex> lk(mu_);
     recv_finish_handles_[app_thread_id] = recv_finish_handle;
   }
@@ -40,12 +38,10 @@ public:
   }
   void AddResponse(uint32_t app_thread_id, uint32_t model_id, Message& m) override {
     bool recv_finish = false;
-    while(tracker_.find(app_thread_id) == tracker_.end()) {}
     {
       std::lock_guard<std::mutex> lk(mu_);
       recv_finish = tracker_[app_thread_id].first == tracker_[app_thread_id].second + 1 ? true : false;
     }
-    // FIXME: bad_function_call
     recv_handles_[app_thread_id](m);
     if (recv_finish) {
       recv_finish_handles_[app_thread_id]();
@@ -60,7 +56,7 @@ public:
   }
 
 private:
-  // QUESTION: should I use both app_thread_id and model_id?
+  // TODO: use both app_thread_id and model_id?
   std::map<uint32_t, std::function<void(Message&)>> recv_handles_;
   std::map<uint32_t, std::function<void()>> recv_finish_handles_;
 
