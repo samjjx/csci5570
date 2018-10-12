@@ -8,21 +8,20 @@ add_library(csci5570 STATIC
   $<TARGET_OBJECTS:driver-objs>
   )
 
-# Unit Test
-#file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_test.cpp)
-##file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/server/server_thread_test.cpp)
-##file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/server/map_storage_test.cpp)
-##file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/server/consistency/ssp_model_test.cpp)
-#
-#include_directories(${GTEST_INCLUDE})
-#add_executable(HuskyUnitTest ${UNITTEST_FILES} test_main.cpp)
-#add_dependencies(HuskyUnitTest gtest)
-#target_link_libraries(HuskyUnitTest csci5570)
-#target_link_libraries(HuskyUnitTest ${HUSKY_EXTERNAL_LIB})
-#target_link_libraries(HuskyUnitTest ${GTEST_LIBRARIES})
-#target_link_libraries(HuskyUnitTest ${GMOCK_LIBRARIES})
-#set_property(TARGET HuskyUnitTest PROPERTY CXX_STANDARD 11)
-#add_dependencies(HuskyUnitTest ${external_project_dependencies})
+file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_test.cpp)
+#file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/server/server_thread_test.cpp)
+#file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/server/map_storage_test.cpp)
+#file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/server/consistency/ssp_model_test.cpp)
+
+include_directories(${GTEST_INCLUDE})
+add_executable(HuskyUnitTest ${UNITTEST_FILES} test_main.cpp)
+add_dependencies(HuskyUnitTest gtest)
+target_link_libraries(HuskyUnitTest csci5570)
+target_link_libraries(HuskyUnitTest ${HUSKY_EXTERNAL_LIB})
+target_link_libraries(HuskyUnitTest ${GTEST_LIBRARIES})
+target_link_libraries(HuskyUnitTest ${GMOCK_LIBRARIES})
+set_property(TARGET HuskyUnitTest PROPERTY CXX_STANDARD 11)
+add_dependencies(HuskyUnitTest ${external_project_dependencies})
 
 
 include_directories(${GTEST_INCLUDE})
