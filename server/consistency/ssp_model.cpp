@@ -12,6 +12,7 @@ SSPModel::SSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage
 }
 
 void SSPModel::Clock(Message& msg) {
+  if (msg.meta.model_id != model_id_) {return;}
   int min_clock = progress_tracker_.AdvanceAndGetChangedMinClock(msg.meta.sender);
   if (min_clock <= -1) {
     return;
@@ -29,10 +30,12 @@ void SSPModel::Clock(Message& msg) {
 }
 
 void SSPModel::Add(Message& msg) {
+  if (msg.meta.model_id != model_id_) {return;}
   storage_->Add(msg);
 }
 
 void SSPModel::Get(Message& msg) {
+  if (msg.meta.model_id != model_id_) {return;}
   int worker_progress = progress_tracker_.GetProgress(msg.meta.sender);
   int min_clock = progress_tracker_.GetMinClock();
   if (worker_progress - min_clock > staleness_) {
