@@ -46,7 +46,7 @@ void TestBgWorker() {
   std::atomic<bool> ready(false);
 
   // Create a worker thread which runs the KVClientTable
-  SimpleRangeManager range_manager({1, 2}, 1);
+  SimpleRangeManager range_manager({1, 2}, 2);
   ThreadsafeQueue<Message> downstream_queue;
 
   const uint32_t kTestAppThreadId1 = 1;
@@ -59,6 +59,7 @@ void TestBgWorker() {
         }
         KVClientTable<double> table(kTestAppThreadId1, kTestModelId, &downstream_queue, &range_manager, &app_blocker);
         // Add
+
         std::vector<Key> keys = {3, 4, 5, 6};
         std::vector<double> vals = {0.1, 0.1, 0.1, 0.1};
         table.Add(keys, vals);  // {3,4,5,6} -> {3}, {4,5,6}
@@ -66,6 +67,7 @@ void TestBgWorker() {
         // Get
         std::vector<double> rets;
         table.Get(keys, &rets);
+
         CHECK_EQ(rets.size(), 4);
         LOG(INFO) << rets[0] << " " << rets[1] << " " << rets[2] << " " << rets[3];
       });

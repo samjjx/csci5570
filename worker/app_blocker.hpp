@@ -6,6 +6,7 @@
 #define CSCI5570_CALLBACK_RUNNER_HPP
 
 #include <functional>
+#include <iostream>
 
 #include "worker/abstract_callback_runner.hpp"
 
@@ -17,11 +18,13 @@ public:
   void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id,
                           const std::function<void(Message&)>& recv_handle) override {
     // TODO
+    std::lock_guard<std::mutex> lk(mu_);
     recv_handles_[app_thread_id] = recv_handle;
   }
   void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id,
                                 const std::function<void()>& recv_finish_handle) override {
     // TODO
+    std::lock_guard<std::mutex> lk(mu_);
     recv_finish_handles_[app_thread_id] = recv_finish_handle;
   }
 
@@ -31,7 +34,9 @@ public:
   }
   void WaitRequest(uint32_t app_thread_id, uint32_t model_id) override {
     std::unique_lock<std::mutex> lk(mu_);
-    cond_.wait(lk, [this, app_thread_id, model_id] { return tracker_[app_thread_id].first == tracker_[app_thread_id].second; });
+    cond_.wait(lk, [this, app_thread_id, model_id] {
+        return tracker_[app_thread_id].first == tracker_[app_thread_id].second;
+    });
   }
   void AddResponse(uint32_t app_thread_id, uint32_t model_id, Message& m) override {
     bool recv_finish = false;
