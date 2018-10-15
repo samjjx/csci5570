@@ -30,6 +30,7 @@ void ServerThread::Main() {
 //            return;
 //        }
         if (msg.meta.flag == Flag::kExit) {
+            LOG(INFO) << "server thread exit";
             break;
         }
         if (msg.meta.flag == Flag::kClock) {

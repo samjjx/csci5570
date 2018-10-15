@@ -3,6 +3,8 @@
 #include <vector>
 
 #include "base/abstract_partition_manager.hpp"
+#include "base/range_partition_manager.hpp"
+#include "base/hash_partition_manager.hpp"
 #include "server/abstract_model.hpp"
 #include "server/consistency/ssp_model.hpp"
 #include "server/consistency/asp_model.hpp"
@@ -107,24 +109,25 @@ class Engine {
       ThreadsafeQueue<Message>* reply_queue = sender_->GetMessageQueue();
       switch(storage_type) {
         case StorageType::Map:
-          storage = std::move(static_cast<StoragePtr>(new MapStorage<double>()));
+          storage = std::move(static_cast<StoragePtr>(new MapStorage<Val>()));
           break;
         default:
-          storage = std::move(static_cast<StoragePtr>(new MapStorage<double>()));
+          storage = std::move(static_cast<StoragePtr>(new MapStorage<Val>()));
           break;
       }
       switch(model_type) {
         case ModelType::SSP:
           model = std::move(static_cast<ModelPtr>(
-                  new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
+                                    new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
           break;
         default:
           model = std::move(static_cast<ModelPtr>(
-                  new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
+                                    new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
           break;
       }
       server_thread->RegisterModel(model_id, std::move(model));
     }
+    return model_id;
   }
 
   /**
@@ -139,7 +142,9 @@ class Engine {
    */
   template <typename Val>
   uint32_t CreateTable(ModelType model_type, StorageType storage_type, int model_staleness = 0) {
-    // TODO
+    std::vector<uint32_t> server_ids = id_mapper_->GetAllServerThreads();
+    std::unique_ptr<AbstractPartitionManager> pm(new HashPartitionManager(server_ids));
+    return CreateTable<Val>(std::move(pm), model_type, storage_type, model_staleness);
   }
 
   /**
