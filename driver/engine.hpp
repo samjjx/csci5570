@@ -19,6 +19,7 @@
 #include "driver/worker_spec.hpp"
 #include "server/server_thread.hpp"
 #include "worker/abstract_callback_runner.hpp"
+#include "worker/app_blocker.hpp"
 #include "worker/worker_helper_thread.hpp"
 
 namespace csci5570 {
@@ -34,7 +35,9 @@ class Engine {
    * @param node     the current node
    * @param nodes    all nodes in the cluster
    */
-  Engine(const Node& node, const std::vector<Node>& nodes) : node_(node), nodes_(nodes) {}
+  Engine(const Node& node, const std::vector<Node>& nodes) : node_(node), nodes_(nodes) {
+    callback_runner_ = std::move(std::unique_ptr<AbstractCallbackRunner>(new AppBlocker()));
+  }
   /**
    * The flow of starting the engine:
    * 1. Create an id_mapper and a mailbox
@@ -93,7 +96,7 @@ class Engine {
    * @return                    the created table(model) id
    */
   template <typename Val>
-  uint32_t CreateTable(std::unique_ptr<AbstractPartitionManager> partition_manager, ModelType model_type,
+  uint32_t CreateTable(std::unique_ptr<AbstractPartitionManager>&& partition_manager, ModelType model_type,
                        StorageType storage_type, int model_staleness = 0) {
     // TODO: support other type of model and storage
     // 1. Assign a table id (incremental and consecutive)
@@ -127,6 +130,7 @@ class Engine {
       }
       server_thread->RegisterModel(model_id, std::move(model));
     }
+
     return model_id;
   }
 
@@ -173,7 +177,7 @@ class Engine {
    * @param table_id            the model id
    * @param partition_manager   the partition manager for the specific model
    */
-  void RegisterPartitionManager(uint32_t table_id, std::unique_ptr<AbstractPartitionManager> partition_manager);
+  void RegisterPartitionManager(uint32_t table_id, std::unique_ptr<AbstractPartitionManager>&& partition_manager);
 
   std::map<uint32_t, std::unique_ptr<AbstractPartitionManager>> partition_manager_map_;
   // nodes

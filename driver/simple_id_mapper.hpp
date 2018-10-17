@@ -77,6 +77,16 @@ class SimpleIdMapper : public AbstractIdMapper {
    */
   std::vector<uint32_t> GetAllServerThreads();
 
+  /**
+   * Allocate a worker_helper_thread to a worker_thread
+   * @param node_id
+   * @param worker_id
+   * @return allocated helper_id if success, otherwise -1
+   */
+  int AllocateHelperForWorker(uint32_t node_id, uint32_t worker_id);
+
+  int GetHelperForWorker(uint32_t worker_thread_id);
+
   static const uint32_t kMaxNodeId = 1000;
   static const uint32_t kMaxThreadsPerNode = 1000;
   // BgThreads include server threads and worker threads
@@ -91,6 +101,7 @@ class SimpleIdMapper : public AbstractIdMapper {
   std::map<uint32_t, std::vector<uint32_t>> node2server_;
   std::map<uint32_t, std::vector<uint32_t>> node2worker_helper_;
   std::map<uint32_t, std::set<uint32_t>> node2worker_;
+  std::map<uint32_t, uint32_t> worker2helper_;
 
   Node node_;
   std::vector<Node> nodes_;

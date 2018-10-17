@@ -72,6 +72,7 @@ TEST_F(TestEngine, MultipleStartEverything) {  // start three engines on the loc
 TEST_F(TestEngine, SimpleTaskMapStorage) {
   Node node{0, "localhost", 12353};
   Engine engine(node, {node});
+
   // start
   engine.StartEverything();
 

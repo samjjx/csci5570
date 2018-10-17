@@ -15,6 +15,10 @@ class HashPartitionManager : public AbstractPartitionManager {
  public:
   HashPartitionManager(const std::vector<uint32_t>& server_thread_ids) : AbstractPartitionManager(server_thread_ids) {}
 
+  size_t GetNumServers() {
+      return server_thread_ids_.size();
+  }
+
   void Slice(const Keys& keys, std::vector<std::pair<int, Keys>>* sliced) const override {
     uint32_t server_id_num = server_thread_ids_.size();
     std::unordered_map<uint32_t, Keys> server2keys;

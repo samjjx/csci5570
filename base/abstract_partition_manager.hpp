@@ -19,6 +19,7 @@ class AbstractPartitionManager {
   using KVPairs = std::pair<third_party::SArray<Key>, third_party::SArray<double>>;
 
   AbstractPartitionManager(const std::vector<uint32_t>& server_thread_ids) : server_thread_ids_(server_thread_ids) {}
+  virtual ~AbstractPartitionManager() {};
 
   size_t GetNumServers() const;
   const std::vector<uint32_t>& GetServerThreadIds() const;

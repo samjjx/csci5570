@@ -46,7 +46,6 @@ void Engine::StartWorkerThreads() {
   for (uint32_t wid : local_workers) {
     std::unique_ptr<WorkerHelperThread>worker_thread (new WorkerHelperThread(wid, callback_runner_.get()));
     worker_thread->Start();
-    mailbox_->RegisterQueue(wid, worker_thread->GetWorkQueue());
     worker_thread_group_.push_back(std::move(worker_thread));
   }
 }
@@ -72,6 +71,9 @@ void Engine::StopServerThreads() {
 }
 void Engine::StopWorkerThreads() {
   for(auto& worker_thread : worker_thread_group_) {
+    Message exit_msg;
+    exit_msg.meta.flag = Flag::kExit;
+    worker_thread->GetWorkQueue()->Push(exit_msg);
     worker_thread->Stop();
   }
 }
@@ -99,6 +101,14 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
         throw "Allocate worker thread failed!";
       }
       spec.InsertWorkerIdThreadId(worker_id, thread_id);
+      // register worker_thread_queue
+      uint32_t helper_thread_id = id_mapper_->GetHelperForWorker(thread_id);
+      for(auto& helper_thread : worker_thread_group_) {
+        if (helper_thread->GetId() == helper_thread_id) {
+          mailbox_->RegisterQueue(thread_id, helper_thread->GetWorkQueue());
+          break;
+        }
+      }
     }
   }
   return spec;
@@ -129,6 +139,7 @@ void Engine::Run(const MLTask& task) {
   for(uint32_t i = 0; i < worker_ids.size(); i++) {
     uint32_t thread_id = thread_ids[i];
     uint32_t worker_id = worker_ids[i];
+
     std::thread thread(
       [thread_id, worker_id, &task, this]() {
         Info info;
@@ -139,7 +150,14 @@ void Engine::Run(const MLTask& task) {
           info.partition_manager_map[kv.first] = kv.second.get();
         }
         info.callback_runner = callback_runner_.get();
+        // Is this correct?
+        auto tables = task.GetTables();
+        for (uint32_t table_id : tables) {
+          InitTable(table_id, {thread_id});
+        }
         task.RunLambda(info);
+        // free worker thread id
+        id_mapper_->DeallocateWorkerThread(node_.id, thread_id);
       });
     threads.push_back(std::move(thread));
   }
@@ -150,7 +168,7 @@ void Engine::Run(const MLTask& task) {
   }
 }
 
-void Engine::RegisterPartitionManager(uint32_t table_id, std::unique_ptr<AbstractPartitionManager> partition_manager) {
+void Engine::RegisterPartitionManager(uint32_t table_id, std::unique_ptr<AbstractPartitionManager>&& partition_manager) {
   partition_manager_map_[table_id] = std::move(partition_manager);
 }
 

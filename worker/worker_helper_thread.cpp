@@ -1,7 +1,7 @@
 //
 // Created by jennings on 2018/10/8.
 //
-
+#include "glog/logging.h"
 #include "worker/worker_helper_thread.hpp"
 
 namespace csci5570 {
@@ -11,6 +11,7 @@ void WorkerHelperThread::Main() {
     Message msg;
     work_queue_.WaitAndPop(&msg);
     if (msg.meta.flag == Flag::kExit) {
+      LOG(INFO) << "worker helper thread exit";
       break;
     }
     if (msg.meta.flag == Flag::kGet) {

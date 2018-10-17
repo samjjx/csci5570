@@ -49,6 +49,10 @@ int SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
   int max_id = kMaxThreadsPerNode * (node_id + 1);
   for (int tid = min_id; tid < max_id; tid++) {
     if (node2worker_[node_id].find(tid) == node2worker_[node_id].end()) {
+      int alloc_helper = AllocateHelperForWorker(node_id, tid);
+      if (alloc_helper == -1) {
+        return -1;
+      }
       node2worker_[node_id].insert(tid);
       return tid;
     }
@@ -56,11 +60,33 @@ int SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
   return -1;
 }
 
+int SimpleIdMapper::AllocateHelperForWorker(uint32_t node_id, uint32_t worker_thread_id) {
+  std::set<uint32_t> occupied_helpers;
+  for(auto pair : worker2helper_) {
+    occupied_helpers.insert(pair.second);
+  }
+  std::vector<uint32_t> all_helpers = node2worker_helper_[node_id];
+  for(auto helper_id : all_helpers) {
+    if (occupied_helpers.find(helper_id) == occupied_helpers.end()) {
+      worker2helper_[worker_thread_id] = helper_id;
+      return helper_id;
+    }
+  }
+}
+
+int SimpleIdMapper::GetHelperForWorker(uint32_t worker_thread_id) {
+  if (worker2helper_.find(worker_thread_id) == worker2helper_.end()) {
+    return -1;
+  }
+  return worker2helper_[worker_thread_id];
+}
+
 void SimpleIdMapper::DeallocateWorkerThread(uint32_t node_id, uint32_t tid) {
   if (node2worker_[node_id].find(tid) == node2worker_[node_id].end()) {
     return;
   }
   node2worker_[node_id].erase(tid);
+  worker2helper_.erase(tid);
 }
 
 std::vector<uint32_t> SimpleIdMapper::GetServerThreadsForId(uint32_t node_id) {
