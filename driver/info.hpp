@@ -34,7 +34,7 @@ struct Info {
    */
   template <typename Val>
   KVClientTable<Val> CreateKVClientTable(uint32_t table_id) const {
-    return KVClientTable<Val>(thread_id, table_id, send_queue, partition_manager_map, callback_runner);
+    return KVClientTable<Val>(thread_id, table_id, send_queue, partition_manager_map.at(table_id), callback_runner);
   }
 };
 
