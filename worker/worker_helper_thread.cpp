@@ -11,7 +11,6 @@ void WorkerHelperThread::Main() {
     Message msg;
     work_queue_.WaitAndPop(&msg);
     if (msg.meta.flag == Flag::kExit) {
-      LOG(INFO) << "worker helper thread exit";
       break;
     }
     if (msg.meta.flag == Flag::kGet) {

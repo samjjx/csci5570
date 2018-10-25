@@ -68,6 +68,7 @@ void Engine::StopServerThreads() {
   for(auto& server_thread : server_thread_group_) {
     server_thread->Stop();
   }
+  LOG(INFO) << "StopServerThreads";
 }
 void Engine::StopWorkerThreads() {
   for(auto& worker_thread : worker_thread_group_) {
@@ -76,16 +77,21 @@ void Engine::StopWorkerThreads() {
     worker_thread->GetWorkQueue()->Push(exit_msg);
     worker_thread->Stop();
   }
+  LOG(INFO) << "StopWorkerThreads";
 }
 void Engine::StopSender() {
+  mailbox_->Barrier();
   sender_->Stop();
+  LOG(INFO) << "StopSender";
 }
 void Engine::StopMailbox() {
   mailbox_->Stop();
+  LOG(INFO) << "StopMailbox";
 }
 
 void Engine::Barrier() {
   // TODO
+  mailbox_->Barrier();
 }
 
 WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc) {
@@ -93,6 +99,7 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
   std::map<uint32_t, std::vector<uint32_t>> node_to_workers = spec.GetNodeToWorkers();
   for (auto& pair : node_to_workers) {
     uint32_t node_id = pair.first;
+    if (node_.id != node_id) {continue;}
     std::vector<uint32_t> workers = pair.second;
     // register workers
     for (auto worker_id : workers) {
@@ -103,6 +110,7 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
       spec.InsertWorkerIdThreadId(worker_id, thread_id);
       // register worker_thread_queue
       uint32_t helper_thread_id = id_mapper_->GetHelperForWorker(thread_id);
+      LOG(INFO) << "bind worker_thread: " << thread_id << " with helper thread: " << helper_thread_id;
       for(auto& helper_thread : worker_thread_group_) {
         if (helper_thread->GetId() == helper_thread_id) {
           mailbox_->RegisterQueue(thread_id, helper_thread->GetWorkQueue());
@@ -121,6 +129,7 @@ void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_id
     reset_msg.meta.model_id = table_id;
     reset_msg.meta.flag = Flag::kResetWorkerInModel;
     reset_msg.meta.recver = sid;
+    reset_msg.meta.sender = worker_ids[0];
     third_party::SArray<uint32_t> tids(worker_ids);
     reset_msg.AddData(tids);
     sender_->GetMessageQueue()->Push(reset_msg);
@@ -136,6 +145,11 @@ void Engine::Run(const MLTask& task) {
   const std::vector<uint32_t>& worker_ids = spec.GetLocalWorkers(node_.id);
   const std::vector<uint32_t>& thread_ids = spec.GetLocalThreads(node_.id);
   std::vector<std::thread> threads;
+  // Is this correct?
+  auto tables = task.GetTables();
+  for (uint32_t table_id : tables) {
+    InitTable(table_id, thread_ids);
+  }
   for(uint32_t i = 0; i < worker_ids.size(); i++) {
     uint32_t thread_id = thread_ids[i];
     uint32_t worker_id = worker_ids[i];
@@ -150,11 +164,6 @@ void Engine::Run(const MLTask& task) {
           info.partition_manager_map[kv.first] = kv.second.get();
         }
         info.callback_runner = callback_runner_.get();
-        // Is this correct?
-        auto tables = task.GetTables();
-        for (uint32_t table_id : tables) {
-          InitTable(table_id, {thread_id});
-        }
         task.RunLambda(info);
         // free worker thread id
         id_mapper_->DeallocateWorkerThread(node_.id, thread_id);

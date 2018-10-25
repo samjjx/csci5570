@@ -25,10 +25,7 @@ void ServerThread::Main() {
     while(true) {
         Message msg;
         work_queue_.WaitAndPop(&msg);
-        // is this necessary?
-//        if (msg.meta.recver != id_) {
-//            return;
-//        }
+        // LOG(INFO) << "Server " << id_ << " received " << msg.DebugString();
         if (msg.meta.flag == Flag::kExit) {
             LOG(INFO) << "server thread exit";
             break;

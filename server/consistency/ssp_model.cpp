@@ -62,8 +62,11 @@ void SSPModel::ResetWorker(Message& msg) {
   auto msg_data = third_party::SArray<uint32_t>(msg.data[0]);
   for (uint32_t tid : msg_data) {tids.push_back(tid);}
   progress_tracker_.Init(tids);
-  msg.meta.flag = Flag::kResetWorkerInModel;
-  reply_queue_->Push(msg);
+  Message response;
+  response.meta.sender = msg.meta.recver;
+  response.meta.recver = msg.meta.sender;
+  response.meta.flag = Flag::kResetWorkerInModel;
+  reply_queue_->Push(response);
 }
 
 }  // namespace csci5570
