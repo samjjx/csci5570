@@ -43,7 +43,17 @@ class KVClientTable {
   };
 
   // ========== API ========== //
-  void Clock() {}
+  void Clock() {
+    auto server_ids = partition_manager_->GetServerThreadIds();
+    for (auto sid : server_ids) {
+      Message m;
+      m.meta.flag = Flag::kClock;
+      m.meta.model_id = model_id_;
+      m.meta.sender = app_thread_id_;
+      m.meta.recver = sid;
+      sender_queue_->Push(m);
+    }
+  }
   // vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {
     Add(Keys(keys), Vals(vals));
