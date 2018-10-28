@@ -14,6 +14,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <fstream>
+#include <lib/svm_loader.hpp>
 
 using namespace csci5570;
 
@@ -43,13 +44,33 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_stderrthreshold = 0;
   FLAGS_colorlogtostderr = true;
+  using DataStore = std::vector<lib::SVMSample>;
+  DataStore data_store;
 
   LOG(INFO) << FLAGS_config_file;
   LOG(INFO) << FLAGS_my_id;
 
+  /*
+   * Begin IO config
+   */
+  std::string url = "hdfs:///a9";
+  std::string hdfs_namenode = "proj10";                        // Do not change
+  std::string master_host = "proj10";  // Set to worker name
+  std::string worker_host = "proj10";  // Set to worker name
+  int hdfs_namenode_port = 9000;
+  int master_port = 19817;  // use a random port number to avoid collision with other users
+  int n_features = 100;
+  /*
+   * End IO config
+   */
+
+
+  lib::Parser<lib::SVMSample, DataStore> parser;
+  lib::DataLoader<lib::SVMSample, DataStore> data_loader;
+  data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
+                                parser, &data_store);
   std::vector<Node> nodes;
   get_nodes_from_config(FLAGS_config_file, nodes);
-
   uint32_t my_id = std::stoi(FLAGS_my_id);
   auto node = std::find_if(nodes.begin(), nodes.end(), [my_id](Node& n){return n.id == my_id;});
   if (node == nodes.end()) {
