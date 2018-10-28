@@ -11,8 +11,11 @@
 //#include "lib/abstract_data_loader.hpp"
 //#include "lib/labeled_sample.hpp"
 //#include "lib/parser.hpp"
+#include "app/logitstic_regression.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <boost/range/irange.hpp>
 #include <fstream>
 #include <lib/svm_loader.hpp>
 
@@ -40,6 +43,24 @@ void get_nodes_from_config(std::string config_file, std::vector<Node>& nodes) {
 }
 
 int main(int argc, char** argv) {
+  /*
+  LogisticRegression<float, 3> lr(0.1);
+  Matrix<float, 2, 3> x;
+  x <<
+    1, 2, 3,
+    3, 2, 1;
+  Matrix<float, 2, 1> y;
+  y << 1, 0;
+  lr.set_data(x, y);
+  Matrix<float, 3, 1> grad(3);
+  Matrix<float, 3, 1> theta(3);
+  lr.get_theta(theta);
+  lr.compute_gradient(grad);
+  LOG(INFO) << grad;
+  theta += grad;
+  lr.update_theta(theta);
+  LOG(INFO) << theta;
+  */
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
   FLAGS_stderrthreshold = 0;
@@ -95,21 +116,41 @@ int main(int argc, char** argv) {
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId](const Info& info) {
     LOG(INFO) << info.DebugString();
+    // algorithm helper
+    const uint32_t DIM = 3;
+    const uint32_t SAMPLE_NUM = 2;
+    const float learning_rate = 0.1;
+    LogisticRegression<double, DIM> lr(learning_rate);
+    Matrix<double, SAMPLE_NUM, DIM> x;
+    x <<
+      1, 2, 3,
+      3, 2, 1;
+    Matrix<double, SAMPLE_NUM, 1> y;
+    y << 1, 0;
+    lr.set_data(x, y);
+    Matrix<double, DIM, 1> grad(3);
+    Matrix<double, DIM, 1> theta(3);
+//    lr.get_theta(theta);
 
+    // key for parameters
+    std::vector<Key> keys;
+    boost::push_back(keys, boost::irange(0, static_cast<int>(DIM)));
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
-    for (int i = 0; i < 1e2; ++i) {
-      std::vector<Key> keys{1};
-
+    for (int i = 0; i < 10; ++i) {
+      // parameters from server
       std::vector<double> ret;
       table.Get(keys, &ret);
-      LOG(INFO) << ret[0];
 
-      std::vector<double> vals{0.5};
+      for (uint32_t j = 0; j < DIM; j++) {theta(j, 0) = ret[j];}
+      lr.update_theta(theta);
+      lr.compute_gradient(grad);
+      std::vector<double> vals;
+      for(uint32_t j = 0; j < DIM; j++) {vals.push_back(grad(j, 0));}
       table.Add(keys, vals);
-
       table.Clock();
     }
+    LOG(INFO) << theta;
     LOG(INFO) << "Task completed.";
   });
 

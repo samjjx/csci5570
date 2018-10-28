@@ -98,7 +98,7 @@ class Engine {
   template <typename Val>
   uint32_t CreateTable(std::unique_ptr<AbstractPartitionManager>&& partition_manager, ModelType model_type,
                        StorageType storage_type, int model_staleness = 0) {
-    // TODO: support other type of model and storage
+    // TODO: support vector storage
     // 1. Assign a table id (incremental and consecutive)
     uint32_t model_id = model_count_++;
     // 2. Register the partition manager to the model
@@ -122,6 +122,14 @@ class Engine {
         case ModelType::SSP:
           model = std::move(static_cast<ModelPtr>(
                                     new SSPModel(model_id, std::move(storage), model_staleness, reply_queue)));
+          break;
+        case ModelType::ASP:
+          model = std::move(static_cast<ModelPtr>(
+                                    new ASPModel(model_id, std::move(storage), reply_queue)));
+          break;
+        case ModelType::BSP:
+          model = std::move(static_cast<ModelPtr>(
+                                    new BSPModel(model_id, std::move(storage), reply_queue)));
           break;
         default:
           model = std::move(static_cast<ModelPtr>(
