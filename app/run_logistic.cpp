@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
   /*
    * Begin IO config
    */
-  std::string url = "hdfs:///a9";
+  std::string url = "hdfs:///datasets/classification/a9";
   std::string hdfs_namenode = "proj10";                        // Do not change
   std::string master_host = "proj10";  // Set to worker name
   std::string worker_host = "proj10";  // Set to worker name

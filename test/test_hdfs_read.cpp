@@ -36,7 +36,8 @@ void HDFS_Read() {
 
   // 4. The user thread runing UDF
   std::thread worker_thread([hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host] {
-    std::string input = "hdfs:///datasets/classification/a9";
+//    std::string input = "hdfs:///a9";
+      std::string input = "hdfs:///datasets/classification/a9";
     int num_threads = 1;
     int second_id = 0;
     LineInputFormat infmt(input, num_threads, second_id, &coordinator, worker_host, hdfs_namenode, hdfs_namenode_port);

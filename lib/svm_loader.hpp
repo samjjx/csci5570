@@ -55,8 +55,10 @@ namespace csci5570 {
                   int num_threads = 1;
                   int second_id = 0;
 
+                  LOG(INFO) << "Line input start to prepare";
                   LineInputFormat infmt(url, num_threads, second_id, &coordinator, worker_host, hdfs_namenode,
                                         hdfs_namenode_port);
+                  LOG(INFO) << "Line input is well prepared";
 
                   boost::string_ref record;
                   bool success = true;
@@ -73,6 +75,8 @@ namespace csci5570 {
                       break;
                   }
               });
+              master_thread.join();
+              worker_thread.join();
             }
         };  // Class DataLoader
     }  // namespace lib
