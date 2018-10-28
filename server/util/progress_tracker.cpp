@@ -1,5 +1,5 @@
 #include "server/util/progress_tracker.hpp"
-
+#include <algorithm>
 #include "glog/logging.h"
 
 namespace csci5570 {
