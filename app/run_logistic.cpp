@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                                 parser, &data_store);
+
   std::vector<Node> nodes;
   get_nodes_from_config(FLAGS_config_file, nodes);
   uint32_t my_id = std::stoi(FLAGS_my_id);
@@ -98,7 +99,7 @@ int main(int argc, char** argv) {
   MLTask task;
   task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
   task.SetTables({kTableId});     // Use table 0
-  task.SetLambda([kTableId, &data_store](const Info& info) {
+  task.SetLambda([kTableId, &data_store, n_features](const Info& info) {
     LOG(INFO) << info.DebugString();
     // algorithm helper
     const float learning_rate = 0.1;
@@ -107,8 +108,8 @@ int main(int argc, char** argv) {
     std::vector<Key> keys;
     // init data
     const uint32_t SAMPLE_NUM = data_store.size();
-    Matrix<double, Dynamic, n_features> x(SAMPLE_NUM);
-    Matrix<double, Dynamic, 1> y(SAMPLE_NUM);
+    Matrix<double, Dynamic, n_features> x(SAMPLE_NUM, n_features);
+    Matrix<double, Dynamic, 1> y(SAMPLE_NUM, 1);
     for(uint32_t i = 0; i < SAMPLE_NUM; i++) {
       for(uint32_t j = 0; j < n_features; j++) {
         x(i, j) = static_cast<double>(data_store[i].x_[j].second);
@@ -116,7 +117,7 @@ int main(int argc, char** argv) {
           keys.push_back(static_cast<Key>(data_store[i].x_[j].first));
         }
       }
-      y(i) = static_cast<double>(data_store[i].y_);
+      y(i, 0) = static_cast<double>(data_store[i].y_);
     }
     lr.set_data(&x, &y);
     Matrix<double, n_features, 1> grad;
@@ -136,7 +137,7 @@ int main(int argc, char** argv) {
       table.Add(keys, vals);
       table.Clock();
     }
-    LOG(INFO) << theta;
+//    LOG(INFO) << theta;
     LOG(INFO) << "Task completed.";
   });
 
