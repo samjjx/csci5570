@@ -46,7 +46,7 @@ public:
       for(auto& col : row.x_) {
         Key key = col.first;
         auto x = col.second;
-        grad_[key] += -1 * x * (g - y);
+        grad_[key] += -learning_rate_ * x * (g - y);
       }
     }
     for(auto& g : grad_) {
@@ -65,6 +65,29 @@ public:
       if (theta_.find(keys[i]) == theta_.end()) {continue;}
       theta_[keys[i]] = vals[i];
     }
+  }
+
+  float test_acc() {
+    uint32_t correct = 0;
+    uint32_t total = 0;
+    for (auto& row : (*data_store_)) {
+      // NOTICE that row.y_ is +1/-1
+      auto y = row.y_ < 0 ? 0 : 1;
+      auto z = 0;
+      for(auto& col : row.x_) {
+        Key key = col.first;
+        auto x = col.second;
+        z += x * theta_[key];
+      }
+      auto g = 1 / (1 + std::exp(-z));
+      auto y_pred = g <= 0.5 ? 0 : 1;
+      if (y_pred == y) {correct++;}
+      total++;
+    }
+    if (total == 0) {
+      return -1;
+    }
+    return static_cast<float>(correct / total);
   }
 
   void get_keys(std::vector<Key>& keys) {

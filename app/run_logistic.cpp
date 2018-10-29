@@ -127,7 +127,9 @@ int main(int argc, char** argv) {
       lr.compute_gradient(grad);
       table.Add(keys, grad);
       table.Clock();
+      LOG(INFO) << "Current accuracy: " << lr.test_acc();
     }
+    // print theta
     std::vector<double> theta;
     table.Get(keys, &theta);
     std::stringstream ss;
