@@ -43,24 +43,6 @@ void get_nodes_from_config(std::string config_file, std::vector<Node>& nodes) {
 }
 
 int main(int argc, char** argv) {
-  /*
-  LogisticRegression<float, 3> lr(0.1);
-  Matrix<float, 2, 3> x;
-  x <<
-    1, 2, 3,
-    3, 2, 1;
-  Matrix<float, 2, 1> y;
-  y << 1, 0;
-  lr.set_data(x, y);
-  Matrix<float, 3, 1> grad(3);
-  Matrix<float, 3, 1> theta(3);
-  lr.get_theta(theta);
-  lr.compute_gradient(grad);
-  LOG(INFO) << grad;
-  theta += grad;
-  lr.update_theta(theta);
-  LOG(INFO) << theta;
-  */
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
   FLAGS_stderrthreshold = 0;
@@ -70,17 +52,19 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << FLAGS_config_file;
   LOG(INFO) << FLAGS_my_id;
+  LOG(INFO) << FLAGS_input;
 
   /*
    * Begin IO config
    */
-  std::string url = "hdfs:///datasets/classification/a9";
+//  std::string url = "hdfs:///datasets/classification/a9";
+  std::string url = FLAGS_input;
   std::string hdfs_namenode = "proj10";                        // Do not change
   std::string master_host = "proj10";  // Set to worker name
   std::string worker_host = "proj10";  // Set to worker name
   int hdfs_namenode_port = 9000;
   int master_port = 19817;  // use a random port number to avoid collision with other users
-  int n_features = 100;
+  const uint32_t n_features = 100;
   /*
    * End IO config
    */
@@ -114,39 +98,41 @@ int main(int argc, char** argv) {
   MLTask task;
   task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
   task.SetTables({kTableId});     // Use table 0
-  task.SetLambda([kTableId](const Info& info) {
+  task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
     // algorithm helper
-    const uint32_t DIM = 3;
-    const uint32_t SAMPLE_NUM = 2;
     const float learning_rate = 0.1;
-    LogisticRegression<double, DIM> lr(learning_rate);
-    Matrix<double, SAMPLE_NUM, DIM> x;
-    x <<
-      1, 2, 3,
-      3, 2, 1;
-    Matrix<double, SAMPLE_NUM, 1> y;
-    y << 1, 0;
-    lr.set_data(x, y);
-    Matrix<double, DIM, 1> grad(3);
-    Matrix<double, DIM, 1> theta(3);
-//    lr.get_theta(theta);
-
+    LogisticRegression<double, n_features> lr(learning_rate);
     // key for parameters
     std::vector<Key> keys;
-    boost::push_back(keys, boost::irange(0, static_cast<int>(DIM)));
+    // init data
+    const uint32_t SAMPLE_NUM = data_store.size();
+    Matrix<double, Dynamic, n_features> x(SAMPLE_NUM);
+    Matrix<double, Dynamic, 1> y(SAMPLE_NUM);
+    for(uint32_t i = 0; i < SAMPLE_NUM; i++) {
+      for(uint32_t j = 0; j < n_features; j++) {
+        x(i, j) = static_cast<double>(data_store[i].x_[j].second);
+        if (keys.size() <= n_features) {
+          keys.push_back(static_cast<Key>(data_store[i].x_[j].first));
+        }
+      }
+      y(i) = static_cast<double>(data_store[i].y_);
+    }
+    lr.set_data(&x, &y);
+    Matrix<double, n_features, 1> grad;
+    Matrix<double, n_features, 1> theta;
+
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
     for (int i = 0; i < 10; ++i) {
       // parameters from server
       std::vector<double> ret;
       table.Get(keys, &ret);
-
-      for (uint32_t j = 0; j < DIM; j++) {theta(j, 0) = ret[j];}
+      for (uint32_t j = 0; j < n_features; j++) {theta(j, 0) = ret[j];}
       lr.update_theta(theta);
       lr.compute_gradient(grad);
       std::vector<double> vals;
-      for(uint32_t j = 0; j < DIM; j++) {vals.push_back(grad(j, 0));}
+      for(uint32_t j = 0; j < n_features; j++) {vals.push_back(grad(j, 0));}
       table.Add(keys, vals);
       table.Clock();
     }

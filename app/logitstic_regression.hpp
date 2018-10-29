@@ -17,17 +17,17 @@ public:
     theta_ = Matrix<T, D, 1>::Zero();
   }
 
-  void set_data(const Matrix<T, Dynamic, D>& X, const Matrix<T, Dynamic, 1> Y) {
+  void set_data(Matrix<T, Dynamic, D>* X, Matrix<T, Dynamic, 1>* Y) {
     X_ = X;
     Y_ = Y;
   }
 
   void compute_gradient(Matrix<T, D, 1>& grad) {
-    Matrix<T, Dynamic, 1> Z = X_ * theta_;
+    Matrix<T, Dynamic, 1> Z = (*X_) * theta_;
     Matrix<T, Dynamic, 1> G = Z.unaryExpr([](T z){
       return 1 / (1 + std::exp(-z));
     });
-    grad = -learning_rate_ * X_.transpose() * (G - Y_);
+    grad = -learning_rate_ * X_->transpose() * (G - (*Y_));
   }
 
   void update_theta(Matrix<T, D, 1> theta) {
@@ -39,9 +39,9 @@ public:
   }
 
 private:
-  Matrix<T, Dynamic, D> X_;
+  Matrix<T, Dynamic, D>* X_;
   Matrix<T, D, 1> theta_;
-  Matrix<T, Dynamic, 1> Y_;
+  Matrix<T, Dynamic, 1>* Y_;
   float learning_rate_;
 };
 
