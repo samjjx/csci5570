@@ -52,14 +52,23 @@ int main(int argc, char** argv) {
   LOG(INFO) << FLAGS_my_id;
   LOG(INFO) << FLAGS_input;
 
+  std::vector<Node> nodes;
+  get_nodes_from_config(FLAGS_config_file, nodes);
+  uint32_t my_id = std::stoi(FLAGS_my_id);
+  auto node = std::find_if(nodes.begin(), nodes.end(), [my_id](Node& n){return n.id == my_id;});
+  if (node == nodes.end()) {
+    LOG(INFO) << "My_id not in nodes list.";
+    return -1;
+  }
+
   /*
    * Begin IO config
    */
 //  std::string url = "hdfs:///datasets/classification/a9";
   std::string url = FLAGS_input;
   std::string hdfs_namenode = "proj10";                        // Do not change
-  std::string master_host = "proj10";  // Set to worker name
-  std::string worker_host = "proj10";  // Set to worker name
+  std::string master_host = node->hostname;  // Set to worker name
+  std::string worker_host = node->hostname;  // Set to worker name
   int hdfs_namenode_port = 9000;
   int master_port = 19817;  // use a random port number to avoid collision with other users
   const uint32_t n_features = 100;
@@ -82,16 +91,6 @@ int main(int argc, char** argv) {
 //  sample1.y_ = 1;
 //  data_store.push_back(sample1);
 
-
-  std::vector<Node> nodes;
-  get_nodes_from_config(FLAGS_config_file, nodes);
-  uint32_t my_id = std::stoi(FLAGS_my_id);
-  auto node = std::find_if(nodes.begin(), nodes.end(), [my_id](Node& n){return n.id == my_id;});
-  if (node == nodes.end()) {
-    LOG(INFO) << "My_id not in nodes list.";
-    return -1;
-  }
-
   Engine engine(*node, nodes);
 
   // 1. Start system
@@ -106,7 +105,7 @@ int main(int argc, char** argv) {
   // 2. Start training task
   MLTask task;
 //  task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
-  task.SetWorkerAlloc({{0, 3}});  // node_id, worker_num
+  task.SetWorkerAlloc({{0, 1}, {1, 1}});  // node_id, worker_num
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();

@@ -67,7 +67,7 @@ namespace csci5570 {
                     success = infmt.next(record);
                     if (success == false)
                       break;
-                    LOG(INFO) << record.to_string();
+                    // LOG(INFO) << record.to_string();
                     Sample s = parse.parse_libsvm(record, n_features);
                     datastore->push_back(s);
                     ++count;
