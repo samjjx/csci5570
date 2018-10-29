@@ -128,6 +128,7 @@ int main(int argc, char** argv) {
       table.Add(keys, grad);
       table.Clock();
       LOG(INFO) << "Current accuracy: " << lr.test_acc();
+      LOG(INFO) << "Current loss: " << lr.get_loss();
     }
     // print theta
     std::vector<double> theta;

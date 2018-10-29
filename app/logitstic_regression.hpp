@@ -29,6 +29,26 @@ public:
     }
   }
 
+  double cal_z(lib::SVMSample sample) {
+    double z = 0;
+    for(auto& col : sample.x_) {
+      Key key = col.first;
+      auto x = col.second;
+      z += x * theta_[key];
+    }
+    return z;
+  }
+
+  double get_loss() {
+    double loss = 0;
+    for (auto& row : (*data_store_)) {
+      int y = row.y_ < 0 ? 0 : 1;
+      double z = cal_z(row);
+      loss += (-1 * y * std::log(z) - (1 - y) * std::log(1 - z));
+    }
+    return loss;
+  }
+
   void compute_gradient(std::vector<T>& grad) {
     for(auto& g : grad_) {
       g.second = 0.0;
