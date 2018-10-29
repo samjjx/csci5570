@@ -18,11 +18,9 @@
 #include <boost/range/irange.hpp>
 #include <fstream>
 #include <lib/svm_loader.hpp>
+//#include "lib/svm_sample.hpp"
 
 using namespace csci5570;
-
-using Sample = double;
-using DataStore = std::vector<Sample>;
 
 DEFINE_string(config_file, "", "The config file path");
 DEFINE_string(my_id, "", "Local node id");
@@ -75,6 +73,16 @@ int main(int argc, char** argv) {
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                                 parser, &data_store);
 
+//  lib::SVMSample sample;
+//  sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
+//  sample.y_ = -1;
+//  data_store.push_back(sample);
+//  lib::SVMSample sample1;
+//  sample1.x_ = std::vector<std::pair<int, int>>({{2, 2}, {3, 1}});
+//  sample1.y_ = 1;
+//  data_store.push_back(sample1);
+
+
   std::vector<Node> nodes;
   get_nodes_from_config(FLAGS_config_file, nodes);
   uint32_t my_id = std::stoi(FLAGS_my_id);
@@ -97,47 +105,38 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
-  task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
+//  task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
+  task.SetWorkerAlloc({{0, 3}});  // node_id, worker_num
   task.SetTables({kTableId});     // Use table 0
-  task.SetLambda([kTableId, &data_store, n_features](const Info& info) {
+  task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
     // algorithm helper
-    const float learning_rate = 0.1;
-    LogisticRegression<double, n_features> lr(learning_rate);
+    LogisticRegression<double> lr(&data_store);
     // key for parameters
     std::vector<Key> keys;
-    // init data
-    const uint32_t SAMPLE_NUM = data_store.size();
-    Matrix<double, Dynamic, n_features> x(SAMPLE_NUM, n_features);
-    Matrix<double, Dynamic, 1> y(SAMPLE_NUM, 1);
-    for(uint32_t i = 0; i < SAMPLE_NUM; i++) {
-      for(uint32_t j = 0; j < n_features; j++) {
-        x(i, j) = static_cast<double>(data_store[i].x_[j].second);
-        if (keys.size() <= n_features) {
-          keys.push_back(static_cast<Key>(data_store[i].x_[j].first));
-        }
-      }
-      y(i, 0) = static_cast<double>(data_store[i].y_);
-    }
-    lr.set_data(&x, &y);
-    Matrix<double, n_features, 1> grad;
-    Matrix<double, n_features, 1> theta;
+    lr.get_keys(keys);
+    LOG(INFO) << "parameter size: " << keys.size();
 
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
     for (int i = 0; i < 10; ++i) {
       // parameters from server
-      std::vector<double> ret;
-      table.Get(keys, &ret);
-      for (uint32_t j = 0; j < n_features; j++) {theta(j, 0) = ret[j];}
-      lr.update_theta(theta);
+      std::vector<double> theta;
+      table.Get(keys, &theta);
+      lr.update_theta(keys, theta);
+      std::vector<double> grad;
       lr.compute_gradient(grad);
-      std::vector<double> vals;
-      for(uint32_t j = 0; j < n_features; j++) {vals.push_back(grad(j, 0));}
-      table.Add(keys, vals);
+      table.Add(keys, grad);
       table.Clock();
     }
-//    LOG(INFO) << theta;
+    std::vector<double> theta;
+    table.Get(keys, &theta);
+    std::stringstream ss;
+    for(auto t : theta) {
+      ss << t;
+      ss << " ";
+    }
+    LOG(INFO) << ss.str();
     LOG(INFO) << "Task completed.";
   });
 
