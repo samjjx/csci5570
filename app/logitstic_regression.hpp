@@ -68,7 +68,7 @@ public:
   }
 
   float test_acc() {
-    uint32_t correct = 0;
+    float correct = 0;
     uint32_t total = 0;
     for (auto& row : (*data_store_)) {
       // NOTICE that row.y_ is +1/-1
@@ -87,7 +87,7 @@ public:
     if (total == 0) {
       return -1;
     }
-    return static_cast<float>(correct / total);
+    return correct / total;
   }
 
   void get_keys(std::vector<Key>& keys) {
