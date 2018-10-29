@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
   task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
     // algorithm helper
-    LogisticRegression<double> lr(&data_store);
+    LogisticRegression<double> lr(&data_store, 0.0001);
     // key for parameters
     std::vector<Key> keys;
     lr.get_keys(keys);
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
 
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 10e2; ++i) {
       // parameters from server
       std::vector<double> theta;
       table.Get(keys, &theta);
@@ -127,8 +127,10 @@ int main(int argc, char** argv) {
       lr.compute_gradient(grad);
       table.Add(keys, grad);
       table.Clock();
-      LOG(INFO) << "Current accuracy: " << lr.test_acc();
-      LOG(INFO) << "Current loss: " << lr.get_loss();
+      if(i % 5 == 0) {
+        LOG(INFO) << "Current accuracy: " << lr.test_acc();
+        LOG(INFO) << "Current loss: " << lr.get_loss();
+      }
     }
     // print theta
     std::vector<double> theta;

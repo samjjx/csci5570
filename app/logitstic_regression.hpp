@@ -18,7 +18,7 @@ using DataStore = std::vector<lib::SVMSample>;
 template <typename T>
 class LogisticRegression {
 public:
-  LogisticRegression(DataStore* data_store, float learning_rate=0.01)
+  LogisticRegression(DataStore* data_store, float learning_rate=0.001)
     : data_store_(data_store), learning_rate_(learning_rate) {
     // initialize theta
     for(auto& row : (*data_store_)) {
@@ -29,24 +29,24 @@ public:
     }
   }
 
-  double cal_z(lib::SVMSample sample) {
+  double predict(lib::SVMSample sample) {
     double z = 0;
     for(auto& col : sample.x_) {
       Key key = col.first;
       auto x = col.second;
       z += x * theta_[key];
     }
-    return z;
+    return 1.0 / (1 + std::exp(-z));
   }
 
   double get_loss() {
     double loss = 0;
     for (auto& row : (*data_store_)) {
       int y = row.y_ < 0 ? 0 : 1;
-      double z = cal_z(row);
-      loss += (-1 * y * std::log(z) - (1 - y) * std::log(1 - z));
+      double pred = predict(row);
+      loss += (-1 * y * std::log(pred) - (1 - y) * std::log(1 - pred));
     }
-    return loss;
+    return loss/data_store_->size();
   }
 
   void compute_gradient(std::vector<T>& grad) {
@@ -70,7 +70,7 @@ public:
       }
     }
     for(auto& g : grad_) {
-      grad.push_back(g.second);
+      grad.push_back(g.second / data_store_->size());
     }
 //    Matrix<T, Dynamic, 1> Z = (*X_) * theta_;
 //    Matrix<T, Dynamic, 1> G = Z.unaryExpr([](T z){
