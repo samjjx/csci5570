@@ -18,11 +18,9 @@
 #include <boost/range/irange.hpp>
 #include <fstream>
 #include <lib/svm_loader.hpp>
+//#include "lib/svm_sample.hpp"
 
 using namespace csci5570;
-
-using Sample = double;
-using DataStore = std::vector<Sample>;
 
 DEFINE_string(config_file, "", "The config file path");
 DEFINE_string(my_id, "", "Local node id");
@@ -43,24 +41,6 @@ void get_nodes_from_config(std::string config_file, std::vector<Node>& nodes) {
 }
 
 int main(int argc, char** argv) {
-  /*
-  LogisticRegression<float, 3> lr(0.1);
-  Matrix<float, 2, 3> x;
-  x <<
-    1, 2, 3,
-    3, 2, 1;
-  Matrix<float, 2, 1> y;
-  y << 1, 0;
-  lr.set_data(x, y);
-  Matrix<float, 3, 1> grad(3);
-  Matrix<float, 3, 1> theta(3);
-  lr.get_theta(theta);
-  lr.compute_gradient(grad);
-  LOG(INFO) << grad;
-  theta += grad;
-  lr.update_theta(theta);
-  LOG(INFO) << theta;
-  */
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
   FLAGS_stderrthreshold = 0;
@@ -70,17 +50,28 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << FLAGS_config_file;
   LOG(INFO) << FLAGS_my_id;
+  LOG(INFO) << FLAGS_input;
+
+  std::vector<Node> nodes;
+  get_nodes_from_config(FLAGS_config_file, nodes);
+  uint32_t my_id = std::stoi(FLAGS_my_id);
+  auto node = std::find_if(nodes.begin(), nodes.end(), [my_id](Node& n){return n.id == my_id;});
+  if (node == nodes.end()) {
+    LOG(INFO) << "My_id not in nodes list.";
+    return -1;
+  }
 
   /*
    * Begin IO config
    */
-  std::string url = "hdfs:///datasets/classification/a9";
+//  std::string url = "hdfs:///datasets/classification/a9";
+  std::string url = FLAGS_input;
   std::string hdfs_namenode = "proj10";                        // Do not change
-  std::string master_host = "proj10";  // Set to worker name
-  std::string worker_host = "proj10";  // Set to worker name
+  std::string master_host = node->hostname;  // Set to worker name
+  std::string worker_host = node->hostname;  // Set to worker name
   int hdfs_namenode_port = 9000;
   int master_port = 19817;  // use a random port number to avoid collision with other users
-  int n_features = 100;
+  const uint32_t n_features = 100;
   /*
    * End IO config
    */
@@ -90,14 +81,15 @@ int main(int argc, char** argv) {
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                                 parser, &data_store);
-  std::vector<Node> nodes;
-  get_nodes_from_config(FLAGS_config_file, nodes);
-  uint32_t my_id = std::stoi(FLAGS_my_id);
-  auto node = std::find_if(nodes.begin(), nodes.end(), [my_id](Node& n){return n.id == my_id;});
-  if (node == nodes.end()) {
-    LOG(INFO) << "My_id not in nodes list.";
-    return -1;
-  }
+
+//  lib::SVMSample sample;
+//  sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
+//  sample.y_ = -1;
+//  data_store.push_back(sample);
+//  lib::SVMSample sample1;
+//  sample1.x_ = std::vector<std::pair<int, int>>({{2, 2}, {3, 1}});
+//  sample1.y_ = 1;
+//  data_store.push_back(sample1);
 
   Engine engine(*node, nodes);
 
@@ -112,45 +104,43 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
-  task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
+//  task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
+  task.SetWorkerAlloc({{0, 1}, {1, 1}});  // node_id, worker_num
   task.SetTables({kTableId});     // Use table 0
-  task.SetLambda([kTableId](const Info& info) {
+  task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
     // algorithm helper
-    const uint32_t DIM = 3;
-    const uint32_t SAMPLE_NUM = 2;
-    const float learning_rate = 0.1;
-    LogisticRegression<double, DIM> lr(learning_rate);
-    Matrix<double, SAMPLE_NUM, DIM> x;
-    x <<
-      1, 2, 3,
-      3, 2, 1;
-    Matrix<double, SAMPLE_NUM, 1> y;
-    y << 1, 0;
-    lr.set_data(x, y);
-    Matrix<double, DIM, 1> grad(3);
-    Matrix<double, DIM, 1> theta(3);
-//    lr.get_theta(theta);
-
+    LogisticRegression<double> lr(&data_store, 0.0001);
     // key for parameters
     std::vector<Key> keys;
-    boost::push_back(keys, boost::irange(0, static_cast<int>(DIM)));
+    lr.get_keys(keys);
+    LOG(INFO) << "parameter size: " << keys.size();
+
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 10e2; ++i) {
       // parameters from server
-      std::vector<double> ret;
-      table.Get(keys, &ret);
-
-      for (uint32_t j = 0; j < DIM; j++) {theta(j, 0) = ret[j];}
-      lr.update_theta(theta);
+      std::vector<double> theta;
+      table.Get(keys, &theta);
+      lr.update_theta(keys, theta);
+      std::vector<double> grad;
       lr.compute_gradient(grad);
-      std::vector<double> vals;
-      for(uint32_t j = 0; j < DIM; j++) {vals.push_back(grad(j, 0));}
-      table.Add(keys, vals);
+      table.Add(keys, grad);
       table.Clock();
+      if(i % 5 == 0) {
+        LOG(INFO) << "Current accuracy: " << lr.test_acc();
+        LOG(INFO) << "Current loss: " << lr.get_loss();
+      }
     }
-    LOG(INFO) << theta;
+    // print theta
+    std::vector<double> theta;
+    table.Get(keys, &theta);
+    std::stringstream ss;
+    for(auto t : theta) {
+      ss << t;
+      ss << " ";
+    }
+    LOG(INFO) << ss.str();
     LOG(INFO) << "Task completed.";
   });
 

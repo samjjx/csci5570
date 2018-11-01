@@ -67,13 +67,17 @@ namespace csci5570 {
                     success = infmt.next(record);
                     if (success == false)
                       break;
-                    LOG(INFO) << record.to_string();
+                    // LOG(INFO) << record.to_string();
                     Sample s = parse.parse_libsvm(record, n_features);
                     datastore->push_back(s);
                     ++count;
                     if (count > 10000)
                       break;
                   }
+                  // Notify master that the worker wants to exit
+                  BinStream finish_signal;
+                  finish_signal << worker_host << second_id;
+                  coordinator.notify_master(finish_signal, 300);
               });
               master_thread.join();
               worker_thread.join();

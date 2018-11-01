@@ -15,8 +15,8 @@ from os.path import dirname, join
 # 4:worker5:37542
 #
 # hostfile = "machinefiles/local"
-hostfile = "machinefiles/5node"
-progfile = "debug/BasicExample"
+hostfile = "machinefiles/nodes"
+progfile = "build/Logistic"
 
 script_path = os.path.realpath(__file__)
 proj_dir = dirname(dirname(script_path))
@@ -27,6 +27,7 @@ print "hostfile_path:%s, prog_path:%s" % (hostfile_path, prog_path)
 
 params = {
     "config_file":hostfile_path,
+    "input": "hdfs:///datasets/classification/a9"
 }
 
 ssh_cmd = (
