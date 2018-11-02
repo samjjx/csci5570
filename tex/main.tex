@@ -7,7 +7,7 @@
 \newcommand{\stitle}[1]{\vspace{0.4ex}\noindent{\bf #1}}
 
 \title{Addressing the straggler problem for parameter server(CSCI 5570 proposal)}
-\author{authors}
+\author{Jianlin Liu, Huichao Liang, Jiaxin Jiang}
 
 \maketitle
 
@@ -27,7 +27,7 @@
 
 \noindent The second solution is that we schedule the number of training data before each iteration. To achieve this goal, we will transfer a portion of the training data from straggler worker to another worker. To avoid massive data transport between workers, similar to redundancy strategy in consistent hashing, we can keep a backup data partition of next node in every node. So that each node is the backup node for its next node. When a straggler worker is detected, its backup node can start work steeling if it’s possible. After this iteration, the workload can be transfer to backup worker permanently.
 
-\noindent As for communication pattern optimization, one natural solution is to merge redundant messages on the worker side. Another idea is to use shared memory for retrieving/ updating parameters when servers and workers are on the same node, and this is called local zero-copy communication. Based on these two idea proposed in [FlexPS], we can further boost the systems performance. To make full use of local communication, we can scan the dataset to partition data by their related parameter’s key. To be specific, data should be partitioned to the node in which the parameters and data are most correlative. In this case most of the GET/PUT request will be sent to local server thread. In order to achieve this goal, we can define a correlation metric between data and parameter partition called correlative score. Top k data with highest correlative score with a parameter partition will be assigned to that parameter partition to ensure evenness of data partition. This is based on the assumption that connections between data and parameters are sparse and evenly distributed.
+\noindent As for communication pattern optimization, one natural solution is to merge redundant messages on the worker side. Another idea is to use shared memory for retrieving/ updating parameters when servers and workers are on the same node, and this is called local zero-copy communication. Based on these two idea proposed in ~\cite{huang2018flexps}, we can further boost the systems performance. To make full use of local communication, we can scan the dataset to partition data by their related parameter’s key. To be specific, data should be partitioned to the node in which the parameters and data are most correlative. In this case most of the GET/PUT request will be sent to local server thread. In order to achieve this goal, we can define a correlation metric between data and parameter partition called correlative score. Top k data with highest correlative score with a parameter partition will be assigned to that parameter partition to ensure evenness of data partition. This is based on the assumption that connections between data and parameters are sparse and evenly distributed.
 
 
 \section{Schedule}
@@ -39,5 +39,7 @@
 \item \stitle{Week 4. Optimization.}
 \end{enumerate}
 
+\bibliographystyle{abbrv}
+\bibliography{ref}
 
 \end{document}
