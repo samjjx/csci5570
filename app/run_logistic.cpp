@@ -104,8 +104,11 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
-//  task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
-  task.SetWorkerAlloc({{0, 1}, {1, 1}});  // node_id, worker_num
+  std::vector<WorkerAlloc> worker_alloc;
+  for (auto node : nodes) {
+    worker_alloc.push_back({node.id, 1});  // node_id, worker_num
+  }
+  task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();

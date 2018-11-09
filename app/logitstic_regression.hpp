@@ -42,7 +42,7 @@ public:
   double get_loss() {
     double loss = 0;
     for (auto& row : (*data_store_)) {
-      int y = row.y_ < 0 ? 0 : 1;
+      int y = row.y_ <= 0 ? 0 : 1;
       double pred = predict(row);
       loss += (-1 * y * std::log(pred) - (1 - y) * std::log(1 - pred));
     }
@@ -54,8 +54,8 @@ public:
       g.second = 0.0;
     }
     for (auto& row : (*data_store_)) {
-      // NOTICE that row.y_ is +1/-1
-      auto y = row.y_ < 0 ? 0 : 1;
+      // NOTICE that row.y_ maybe +1/-1
+      auto y = row.y_ <= 0 ? 0 : 1;
       auto z = 0;
       for(auto& col : row.x_) {
         Key key = col.first;
@@ -91,8 +91,8 @@ public:
     float correct = 0;
     uint32_t total = 0;
     for (auto& row : (*data_store_)) {
-      // NOTICE that row.y_ is +1/-1
-      auto y = row.y_ < 0 ? 0 : 1;
+      // NOTICE that row.y_ maybe +1/-1
+      auto y = row.y_ <= 0 ? 0 : 1;
       auto z = 0;
       for(auto& col : row.x_) {
         Key key = col.first;
