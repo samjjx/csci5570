@@ -25,6 +25,7 @@ using namespace csci5570;
 DEFINE_string(config_file, "", "The config file path");
 DEFINE_string(my_id, "", "Local node id");
 DEFINE_string(input, "", "The hdfs input url");
+DEFINE_string(learn_rate, "", "Learning rate");
 
 void get_nodes_from_config(std::string config_file, std::vector<Node>& nodes) {
   std::ifstream infile(config_file);
@@ -113,7 +114,7 @@ int main(int argc, char** argv) {
   task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
     // algorithm helper
-    LogisticRegression<double> lr(&data_store, 0.0001);
+    LogisticRegression<double> lr(&data_store, FLAGS_.learn_rate);
     // key for parameters
     std::vector<Key> keys;
     lr.get_keys(keys);
@@ -136,6 +137,7 @@ int main(int argc, char** argv) {
       }
     }
     // print theta
+    /*
     std::vector<double> theta;
     table.Get(keys, &theta);
     std::stringstream ss;
@@ -144,6 +146,7 @@ int main(int argc, char** argv) {
       ss << " ";
     }
     LOG(INFO) << ss.str();
+    */
     LOG(INFO) << "Task completed.";
   });
 
