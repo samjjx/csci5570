@@ -1,0 +1,9 @@
+\begin{thebibliography}{1}
+
+\bibitem{huang2018flexps}
+Y.~Huang, T.~Jin, Y.~Wu, Z.~Cai, X.~Yan, F.~Yang, J.~Li, Y.~Guo, and J.~Cheng.
+\newblock Flexps: Flexible parallelism control in parameter server
+  architecture.
+\newblock {\em Proceedings of the VLDB Endowment}, 11(5):566--579, 2018.
+
+\end{thebibliography}
