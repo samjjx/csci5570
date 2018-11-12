@@ -5,9 +5,12 @@
 namespace csci5570 {
   struct DataRange {
     DataRange(uint32_t start_, uint32_t end_)
-      : start(start_), end(end_) {};
+      : start(start_), end(end_) {
+      length = end - start;
+    };
     uint32_t start;
     uint32_t end;
+    uint32_t length;
   };
 
   class WorkAssigner {

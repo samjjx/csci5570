@@ -23,7 +23,7 @@ public:
     : data_store_(data_store), range_(range), learning_rate_(learning_rate) {
     // initialize theta
     for (uint32_t i = range_.start; i < range_.end; i++) {
-      for(auto& col : (data_store_+i)->x_) {
+      for(auto& col : data_store_->at(i).x_) {
         theta_[col.first] = 0.0;
       }
     }
@@ -42,11 +42,11 @@ public:
   double get_loss() {
     double loss = 0;
     for (uint32_t i = range_.start; i < range_.end; i++) {
-      int y = (data_store_+i)->y_ <= 0 ? 0 : 1;
-      double pred = predict(*(data_store_+i));
+      int y = data_store_->at(i).y_ <= 0 ? 0 : 1;
+      double pred = predict(data_store_->at(i));
       loss += (-1 * y * std::log(pred) - (1 - y) * std::log(1 - pred));
     }
-    return loss/data_store_->size();
+    return loss/range_.length;
   }
 
   /**
@@ -73,7 +73,7 @@ public:
       grad_[key] += -learning_rate_ * x * (g - y);
     }
     for(auto& g : grad_) {
-      grad.push_back(g.second / data_store_->size());
+      grad.push_back(g.second);
     }
   }
 
@@ -90,9 +90,9 @@ public:
     uint32_t total = 0;
     for (uint32_t i = range_.start; i < range_.end; i++) {
       // NOTICE that row.y_ maybe +1/-1
-      auto y = (data_store_+i)->y_ <= 0 ? 0 : 1;
+      auto y = data_store_->at(i).y_ <= 0 ? 0 : 1;
       auto z = 0;
-      for(auto& col : (data_store_+i)->x_) {
+      for(auto& col : data_store_->at(i).x_) {
         Key key = col.first;
         auto x = col.second;
         z += x * theta_[key];
