@@ -54,7 +54,8 @@ public:
    * @param row
    * @param grad
    */
-  void compute_gradient(const lib::SVMSample& row, std::vector<T>& grad) {
+  void compute_gradient(uint32_t i, std::vector<T>& grad) {
+    const lib::SVMSample& row = data_store_->at(i);
     for(auto& g : grad_) {
       g.second = 0.0;
     }

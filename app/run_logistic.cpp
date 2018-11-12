@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
         uint32_t next_idx = info.next_sample();
         if (next_idx == -1) {break;}
         // add gradient to each dimension
-        lr.compute_gradient(grad);
+        lr.compute_gradient(next_idx, grad);
         sample_num += 1;
       }
       // average gradient and update to server
