@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
     // the maximum data range used by current worker
     DataRange data_range = info.get_data_range();
     // algorithm helper
-    LogisticRegression<double> lr(&data_store, data_range.start, data_range.end, 0.00001);
+    LogisticRegression<double> lr(&data_store, data_range, 0.00001);
     // get all parameters keys of this data range
     std::vector<Key> keys;
     lr.get_keys(keys);

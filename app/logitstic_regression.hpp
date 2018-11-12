@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include "lib/svm_sample.hpp"
+#include "driver/work_assigner.hpp"
 
 using namespace Eigen;
 using namespace csci5570;
@@ -18,18 +19,17 @@ using DataStore = std::vector<lib::SVMSample>;
 template <typename T>
 class LogisticRegression {
 public:
-  LogisticRegression(DataStore* data_store, float learning_rate=0.001)
-    : data_store_(data_store), learning_rate_(learning_rate) {
+  LogisticRegression(DataStore* data_store, DataRange range, float learning_rate=0.001)
+    : data_store_(data_store), range_(range), learning_rate_(learning_rate) {
     // initialize theta
-    for(auto& row : (*data_store_)) {
-      for(auto& col : row.x_) {
+    for (uint32_t i = range_.start; i < range_.end; i++) {
+      for(auto& col : (data_store_+i)->x_) {
         theta_[col.first] = 0.0;
-        grad_[col.first] = 0.0;
       }
     }
   }
 
-  double predict(lib::SVMSample sample) {
+  double predict(const lib::SVMSample& sample) {
     double z = 0;
     for(auto& col : sample.x_) {
       Key key = col.first;
@@ -41,42 +41,40 @@ public:
 
   double get_loss() {
     double loss = 0;
-    for (auto& row : (*data_store_)) {
-      int y = row.y_ <= 0 ? 0 : 1;
-      double pred = predict(row);
+    for (uint32_t i = range_.start; i < range_.end; i++) {
+      int y = (data_store_+i)->y_ <= 0 ? 0 : 1;
+      double pred = predict(*(data_store_+i));
       loss += (-1 * y * std::log(pred) - (1 - y) * std::log(1 - pred));
     }
     return loss/data_store_->size();
   }
 
-  void compute_gradient(std::vector<T>& grad) {
+  /**
+   * compute gradient of one sample
+   * @param row
+   * @param grad
+   */
+  void compute_gradient(const lib::SVMSample& row, std::vector<T>& grad) {
     for(auto& g : grad_) {
       g.second = 0.0;
     }
-    for (auto& row : (*data_store_)) {
-      // NOTICE that row.y_ maybe +1/-1
-      auto y = row.y_ <= 0 ? 0 : 1;
-      auto z = 0;
-      for(auto& col : row.x_) {
-        Key key = col.first;
-        auto x = col.second;
-        z += x * theta_[key];
-      }
-      auto g = 1 / (1 + std::exp(-z));
-      for(auto& col : row.x_) {
-        Key key = col.first;
-        auto x = col.second;
-        grad_[key] += -learning_rate_ * x * (g - y);
-      }
+    // NOTICE that row.y_ maybe +1/-1
+    auto y = row.y_ <= 0 ? 0 : 1;
+    auto z = 0;
+    for(auto& col : row.x_) {
+      Key key = col.first;
+      auto x = col.second;
+      z += x * theta_[key];
+    }
+    auto g = 1 / (1 + std::exp(-z));
+    for(auto& col : row.x_) {
+      Key key = col.first;
+      auto x = col.second;
+      grad_[key] += -learning_rate_ * x * (g - y);
     }
     for(auto& g : grad_) {
       grad.push_back(g.second / data_store_->size());
     }
-//    Matrix<T, Dynamic, 1> Z = (*X_) * theta_;
-//    Matrix<T, Dynamic, 1> G = Z.unaryExpr([](T z){
-//      return 1 / (1 + std::exp(-z));
-//    });
-//    grad = -learning_rate_ * X_->transpose() * (G - (*Y_));
   }
 
   void update_theta(const std::vector<Key>& keys, const std::vector<T>& vals) {
@@ -90,11 +88,11 @@ public:
   float test_acc() {
     float correct = 0;
     uint32_t total = 0;
-    for (auto& row : (*data_store_)) {
+    for (uint32_t i = range_.start; i < range_.end; i++) {
       // NOTICE that row.y_ maybe +1/-1
-      auto y = row.y_ <= 0 ? 0 : 1;
+      auto y = (data_store_+i)->y_ <= 0 ? 0 : 1;
       auto z = 0;
-      for(auto& col : row.x_) {
+      for(auto& col : (data_store_+i)->x_) {
         Key key = col.first;
         auto x = col.second;
         z += x * theta_[key];
@@ -120,6 +118,7 @@ private:
   DataStore* data_store_;
   std::map<Key, T> theta_;
   std::map<Key, T> grad_;
+  DataRange range_;
   float learning_rate_;
 };
 
