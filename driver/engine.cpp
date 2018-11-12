@@ -150,16 +150,19 @@ void Engine::Run(const MLTask& task) {
   for (uint32_t table_id : tables) {
     InitTable(table_id, thread_ids);
   }
+  uint32_t data_size = task.getDataSize();
+  uint32_t batch_size = ceil(data_size / worker_ids.size());
   for(uint32_t i = 0; i < worker_ids.size(); i++) {
     uint32_t thread_id = thread_ids[i];
     uint32_t worker_id = worker_ids[i];
-
+    WorkAssigner work_assigner(DataRange(i * batch_size, std::min(i * batch_size + batch_size, data_size)));
     std::thread thread(
-      [thread_id, worker_id, &task, this]() {
+      [thread_id, worker_id, &task, &work_assigner, this]() {
         Info info;
         info.thread_id = thread_id;
         info.worker_id = worker_id;
         info.send_queue = sender_->GetMessageQueue();
+        info.work_assigner = &work_assigner;
         for(auto& kv : partition_manager_map_) {
           info.partition_manager_map[kv.first] = kv.second.get();
         }

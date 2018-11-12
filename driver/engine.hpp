@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
+#include <math.h>
 
 #include "base/abstract_partition_manager.hpp"
 #include "base/range_partition_manager.hpp"
@@ -17,6 +19,7 @@
 #include "driver/ml_task.hpp"
 #include "driver/simple_id_mapper.hpp"
 #include "driver/worker_spec.hpp"
+#include "driver/work_assigner.hpp"
 #include "server/server_thread.hpp"
 #include "worker/abstract_callback_runner.hpp"
 #include "worker/app_blocker.hpp"

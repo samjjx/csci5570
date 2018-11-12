@@ -104,6 +104,7 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
+  task.setDataSize(data_store.size());
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {
     worker_alloc.push_back({node.id, 1});  // node_id, worker_num
@@ -112,28 +113,50 @@ int main(int argc, char** argv) {
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
+    uint32_t MAX_EPOCH = 10e2;
+    // the maximum data range used by current worker
+    DataRange data_range = info.get_data_range();
     // algorithm helper
-    LogisticRegression<double> lr(&data_store, 0.00001);
-    // key for parameters
+    LogisticRegression<double> lr(&data_store, data_range.start, data_range.end, 0.00001);
+    // get all parameters keys of this data range
     std::vector<Key> keys;
     lr.get_keys(keys);
     LOG(INFO) << "parameter size: " << keys.size();
 
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
-    for (int i = 0; i < 10e2; ++i) {
-      // parameters from server
+    // EPOCH
+    for (int i = 0; i < MAX_EPOCH; ++i) {
+      // update parameters
       std::vector<double> theta;
       table.Get(keys, &theta);
       lr.update_theta(keys, theta);
-      std::vector<double> grad;
-      lr.compute_gradient(grad);
-      table.Add(keys, grad);
-      table.Clock();
       if(i % 5 == 0) {
         LOG(INFO) << "Current accuracy: " << lr.test_acc();
         LOG(INFO) << "Current loss: " << lr.get_loss();
       }
+
+      lib::SVMSample sample;
+      std::vector<double> grad;
+
+      // get one training data
+      uint32_t sample_num = 0;
+      while(true) {
+        uint32_t next_idx = info.next_sample();
+        if (next_idx == -1) {break;}
+        // add gradient to each dimension
+        lr.compute_gradient(grad);
+        sample_num += 1;
+      }
+      // average gradient and update to server
+      if (sample_num > 0) {
+        for (auto j = 0; j < grad.size(); j++) {
+          grad[i] /= sample_num;
+        }
+        table.Add(keys, grad);
+      }
+
+      table.Clock();
     }
     // print theta
     /*

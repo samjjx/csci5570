@@ -6,6 +6,7 @@
 #include "base/threadsafe_queue.hpp"
 #include "worker/abstract_callback_runner.hpp"
 #include "worker/kv_client_table.hpp"
+#include "driver/work_assigner.hpp"
 
 #include "glog/logging.h"
 
@@ -20,6 +21,7 @@ struct Info {
   ThreadsafeQueue<Message>* send_queue;
   std::map<uint32_t, AbstractPartitionManager*> partition_manager_map;
   AbstractCallbackRunner* callback_runner;
+  WorkAssigner* work_assigner;
   std::string DebugString() const {
     std::stringstream ss;
     ss << "thread_id: " << thread_id << " worker_id: " << worker_id;
@@ -35,6 +37,14 @@ struct Info {
   template <typename Val>
   KVClientTable<Val> CreateKVClientTable(uint32_t table_id) const {
     return KVClientTable<Val>(thread_id, table_id, send_queue, partition_manager_map.at(table_id), callback_runner);
+  }
+
+  DataRange get_data_range() const {
+    return work_assigner->get_data_range();
+  }
+
+  uint32_t next_sample() const {
+    return work_assigner->next_sample();
   }
 };
 

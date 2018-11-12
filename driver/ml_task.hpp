@@ -56,10 +56,15 @@ class MLTask {
    */
   bool IsSetup() const { return func_ && !worker_alloc_.empty() && !tables_.empty(); }
 
+  void setDataSize(uint32_t dsize) {data_size = dsize;}
+
+  uint32_t getDataSize() const {return data_size;}
+
  private:
   std::function<void(const Info&)> func_;  // UDF
   std::vector<WorkerAlloc> worker_alloc_;  // the allocation of worker to the current task
   std::vector<uint32_t> tables_;           // model ids
+  uint32_t data_size;
 };
 
 }  // namespace csci5570
