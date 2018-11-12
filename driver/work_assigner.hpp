@@ -20,9 +20,9 @@ namespace csci5570 {
       iter_num = 0;
       cur_sample = 0;
     };
-    uint32_t next_sample() {
+    int next_sample() {
       if (cur_sample == range_.end) {
-        cur_sample = 0;
+        cur_sample = range_.start;
         iter_num++;
         return -1;
       }

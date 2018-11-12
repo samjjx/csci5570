@@ -73,8 +73,9 @@ public:
       auto x = col.second;
       grad_[key] += -learning_rate_ * x * (g - y);
     }
+    uint32_t j = 0;
     for(auto& g : grad_) {
-      grad.push_back(g.second);
+      grad[j++] += g.second;
     }
   }
 

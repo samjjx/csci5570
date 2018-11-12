@@ -43,7 +43,7 @@ struct Info {
     return work_assigner->get_data_range();
   }
 
-  uint32_t next_sample() const {
+  int next_sample() const {
     return work_assigner->next_sample();
   }
 };

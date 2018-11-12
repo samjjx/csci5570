@@ -82,14 +82,17 @@ int main(int argc, char** argv) {
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                                 parser, &data_store);
 
-//  lib::SVMSample sample;
-//  sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
-//  sample.y_ = -1;
-//  data_store.push_back(sample);
-//  lib::SVMSample sample1;
-//  sample1.x_ = std::vector<std::pair<int, int>>({{2, 2}, {3, 1}});
-//  sample1.y_ = 1;
-//  data_store.push_back(sample1);
+  // for test
+  /*
+  lib::SVMSample sample;
+  sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
+  sample.y_ = -1;
+  data_store.push_back(sample);
+  lib::SVMSample sample1;
+  sample1.x_ = std::vector<std::pair<int, int>>({{2, 2}, {3, 1}});
+  sample1.y_ = 1;
+  data_store.push_back(sample1);
+  */
 
   Engine engine(*node, nodes);
 
@@ -131,18 +134,18 @@ int main(int argc, char** argv) {
       std::vector<double> theta;
       table.Get(keys, &theta);
       lr.update_theta(keys, theta);
+
       if(i % 5 == 0) {
         LOG(INFO) << "Current accuracy: " << lr.test_acc();
         LOG(INFO) << "Current loss: " << lr.get_loss();
       }
 
-      lib::SVMSample sample;
-      std::vector<double> grad;
+      std::vector<double> grad(keys.size(), 0.0);
 
       // get one training data
       uint32_t sample_num = 0;
       while(true) {
-        uint32_t next_idx = info.next_sample();
+        int next_idx = info.next_sample();
         if (next_idx == -1) {break;}
         // add gradient to each dimension
         lr.compute_gradient(next_idx, grad);
@@ -151,24 +154,12 @@ int main(int argc, char** argv) {
       // average gradient and update to server
       if (sample_num > 0) {
         for (auto j = 0; j < grad.size(); j++) {
-          grad[i] /= sample_num;
+          grad[j] /= sample_num;
         }
         table.Add(keys, grad);
       }
-
       table.Clock();
     }
-    // print theta
-    /*
-    std::vector<double> theta;
-    table.Get(keys, &theta);
-    std::stringstream ss;
-    for(auto t : theta) {
-      ss << t;
-      ss << " ";
-    }
-    LOG(INFO) << ss.str();
-    */
     LOG(INFO) << "Task completed.";
   });
 
