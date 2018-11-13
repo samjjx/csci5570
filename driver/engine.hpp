@@ -181,6 +181,13 @@ class Engine {
    */
   std::vector<uint32_t> GetServerThreadIds() { return id_mapper_->GetAllServerThreads(); }
 
+  /**
+   * Returns the worker helper thread of the worker user thread
+   * @param thread_id   worker user thread id
+   * @return
+   */
+  WorkerHelperThread* GetHelperOfWorker(uint32_t thread_id);
+
  private:
   /**
    * Register partition manager for a model to the engine

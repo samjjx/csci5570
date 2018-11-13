@@ -16,7 +16,17 @@ void WorkerHelperThread::Main() {
     if (msg.meta.flag == Flag::kGet) {
       callback_runner_->AddResponse(msg.meta.recver, msg.meta.model_id, msg);
     }
+    if (msg.meta.flag != Flag::kGet) {
+      // pass other msgs to work_assigner
+      if (work_assigner_ != nullptr) {
+        work_assigner_->onReceive(msg);
+      }
+    }
   }
+}
+
+void WorkerHelperThread::RegisterWorkAssigner(const WorkAssigner* work_assigner) {
+  work_assigner_ = work_assigner;
 }
 
 void WorkerHelperThread::OnReceive(csci5570::Message &msg) {}

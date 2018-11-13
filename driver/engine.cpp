@@ -109,17 +109,21 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
       }
       spec.InsertWorkerIdThreadId(worker_id, thread_id);
       // register worker_thread_queue
-      uint32_t helper_thread_id = id_mapper_->GetHelperForWorker(thread_id);
-      LOG(INFO) << "bind worker_thread: " << thread_id << " with helper thread: " << helper_thread_id;
-      for(auto& helper_thread : worker_thread_group_) {
-        if (helper_thread->GetId() == helper_thread_id) {
-          mailbox_->RegisterQueue(thread_id, helper_thread->GetWorkQueue());
-          break;
-        }
-      }
+      WorkerHelperThread* helper_thread = GetHelperOfWorker(thread_id);
+      mailbox_->RegisterQueue(thread_id, helper_thread->GetWorkQueue());
+      LOG(INFO) << "bind worker_thread: " << thread_id << " with helper thread: " << helper_thread->GetId();
     }
   }
   return spec;
+}
+
+WorkerHelperThread* Engine::GetHelperOfWorker(uint32_t thread_id) {
+  uint32_t helper_thread_id = id_mapper_->GetHelperForWorker(thread_id);
+  for(auto& helper_thread : worker_thread_group_) {
+    if (helper_thread->GetId() == helper_thread_id) {
+      return helper_thread.get();
+    }
+  }
 }
 
 void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids) {
@@ -155,7 +159,11 @@ void Engine::Run(const MLTask& task) {
   for(uint32_t i = 0; i < worker_ids.size(); i++) {
     uint32_t thread_id = thread_ids[i];
     uint32_t worker_id = worker_ids[i];
-    WorkAssigner work_assigner(DataRange(i * batch_size, std::min(i * batch_size + batch_size, data_size)));
+    // TODO: assign helpee to worker, for now it is just itself
+    WorkAssigner work_assigner(DataRange(i * batch_size, std::min(i * batch_size + batch_size, data_size)), sender_->GetMessageQueue(), thread_id, thread_id);
+    WorkerHelperThread* helper_thread = GetHelperOfWorker(thread_id);
+    helper_thread->RegisterWorkAssigner(&work_assigner);
+    LOG(INFO) << "Helper: " << thread_id << " <-> Helpee: " << thread_id;
     std::thread thread(
       [thread_id, worker_id, &task, &work_assigner, this]() {
         Info info;
