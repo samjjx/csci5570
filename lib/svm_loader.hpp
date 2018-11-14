@@ -74,10 +74,11 @@ namespace csci5570 {
                     //if (count > 10000)
                     //  break;
                   }
+                  LOG(INFO) << "Before revision\t" << count << std::endl;
                   // Notify master that the worker wants to exit
                   BinStream finish_signal;
                   finish_signal << worker_host << second_id;
-                  coordinator.notify_master(finish_signal, 300);
+//                  coordinator.notify_master(finish_signal, 300);
               });
               master_thread.join();
               worker_thread.join();
