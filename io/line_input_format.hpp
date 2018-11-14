@@ -49,7 +49,7 @@ class LineInputFormat {
     // last charater in block
     if (r == buffer_.size() - 1) {
       // fetch next block
-      buffer_ = splitter_->fetch_block(true);
+      buffer_ = splitter_->fetch_block(false);
       if (buffer_.empty()) {
         // end of a file
         bool success = fetch_new_block();
@@ -80,7 +80,7 @@ class LineInputFormat {
       auto last = buffer_.substr(l);
       last_part_ = std::string(last.data(), last.size());
       // fetch next subBlock
-      buffer_ = splitter_->fetch_block(true);
+      buffer_ = splitter_->fetch_block(false);
       handle_next_block();
       ref = last_part_;
       return true;
@@ -110,7 +110,7 @@ class LineInputFormat {
       if (r == boost::string_ref::npos) {
         // fetch next subBlock
         last_part_ += std::string(buffer_.data(), buffer_.size());
-        buffer_ = splitter_->fetch_block(true);
+        buffer_ = splitter_->fetch_block(false);
         continue;
       } else {
         last_part_ += std::string(buffer_.substr(0, r).data(), r);
