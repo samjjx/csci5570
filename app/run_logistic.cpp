@@ -104,13 +104,16 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
-//  task.SetWorkerAlloc({{0, 3}, {1, 2}, {2, 1}});  // node_id, worker_num
-  task.SetWorkerAlloc({{0, 1}, {1, 1}});  // node_id, worker_num
+  std::vector<WorkerAlloc> worker_alloc;
+  for (auto node : nodes) {
+    worker_alloc.push_back({node.id, 1});  // node_id, worker_num
+  }
+  task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
     // algorithm helper
-    LogisticRegression<double> lr(&data_store, 0.0001);
+    LogisticRegression<double> lr(&data_store, 0.00001);
     // key for parameters
     std::vector<Key> keys;
     lr.get_keys(keys);
@@ -133,6 +136,7 @@ int main(int argc, char** argv) {
       }
     }
     // print theta
+    /*
     std::vector<double> theta;
     table.Get(keys, &theta);
     std::stringstream ss;
@@ -141,6 +145,7 @@ int main(int argc, char** argv) {
       ss << " ";
     }
     LOG(INFO) << ss.str();
+    */
     LOG(INFO) << "Task completed.";
   });
 

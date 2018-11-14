@@ -71,8 +71,8 @@ namespace csci5570 {
                     Sample s = parse.parse_libsvm(record, n_features);
                     datastore->push_back(s);
                     ++count;
-                    if (count > 10000)
-                      break;
+                    //if (count > 10000)
+                    //  break;
                   }
                   // Notify master that the worker wants to exit
                   BinStream finish_signal;
