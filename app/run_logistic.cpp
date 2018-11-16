@@ -3,6 +3,7 @@
 #include <iostream>
 #include <random>
 #include <thread>
+#include <chrono>
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -17,8 +18,8 @@
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/irange.hpp>
 #include <fstream>
-#include <lib/svm_loader.hpp>
-//#include "lib/svm_sample.hpp"
+//#include <lib/svm_loader.hpp>
+#include "lib/svm_sample.hpp"
 
 using namespace csci5570;
 
@@ -77,22 +78,22 @@ int main(int argc, char** argv) {
    */
 
 
-  lib::Parser<lib::SVMSample, DataStore> parser;
-  lib::DataLoader<lib::SVMSample, DataStore> data_loader;
-  data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                                parser, &data_store);
+//  lib::Parser<lib::SVMSample, DataStore> parser;
+//  lib::DataLoader<lib::SVMSample, DataStore> data_loader;
+//  data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
+//                                parser, &data_store);
 
   // for test
-  /*
-  lib::SVMSample sample;
-  sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
-  sample.y_ = -1;
-  data_store.push_back(sample);
-  lib::SVMSample sample1;
-  sample1.x_ = std::vector<std::pair<int, int>>({{2, 2}, {3, 1}});
-  sample1.y_ = 1;
-  data_store.push_back(sample1);
-  */
+  for (int i = 0; i < 100; i++) {
+    lib::SVMSample sample;
+    sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
+    sample.y_ = -1;
+    data_store.push_back(sample);
+    lib::SVMSample sample1;
+    sample1.x_ = std::vector<std::pair<int, int>>({{2, 2}, {3, 1}});
+    sample1.y_ = 1;
+    data_store.push_back(sample1);
+  }
 
   Engine engine(*node, nodes);
 
@@ -100,7 +101,7 @@ int main(int argc, char** argv) {
   engine.StartEverything();
 
   // 1.1 Create table
-  const auto kTableId = engine.CreateTable<double>(ModelType::ASP, StorageType::Map);  // table 0
+  const auto kTableId = engine.CreateTable<double>(ModelType::BSP, StorageType::Map);  // table 0
 
   // 1.2 Load data
   engine.Barrier();
@@ -134,7 +135,6 @@ int main(int argc, char** argv) {
       std::vector<double> theta;
       table.Get(keys, &theta);
       lr.update_theta(keys, theta);
-
       if(i % 5 == 0) {
         LOG(INFO) << "Current accuracy: " << lr.test_acc();
         LOG(INFO) << "Current loss: " << lr.get_loss();
@@ -150,6 +150,8 @@ int main(int argc, char** argv) {
         // add gradient to each dimension
         lr.compute_gradient(next_idx, grad);
         sample_num += 1;
+        // simulate straggler
+        if (info.thread_id == 1100) {std::this_thread::sleep_for(std::chrono::milliseconds(10));}
       }
       // average gradient and update to server
       if (sample_num > 0) {
