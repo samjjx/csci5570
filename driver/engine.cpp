@@ -99,15 +99,17 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
   std::map<uint32_t, std::vector<uint32_t>> node_to_workers = spec.GetNodeToWorkers();
   for (auto& pair : node_to_workers) {
     uint32_t node_id = pair.first;
-    if (node_.id != node_id) {continue;}
+    bool is_local_worker = node_.id == node_id;
+//    if (node_.id != node_id) {continue;}
     std::vector<uint32_t> workers = pair.second;
     // register workers
     for (auto worker_id : workers) {
-      int thread_id = id_mapper_->AllocateWorkerThread(node_id);
+      int thread_id = id_mapper_->AllocateWorkerThread(node_id, is_local_worker);
       if (thread_id == -1) {
         throw "Allocate worker thread failed!";
       }
       spec.InsertWorkerIdThreadId(worker_id, thread_id);
+      if (!is_local_worker) {continue;}
       // register worker_thread_queue
       WorkerHelperThread* helper_thread = GetHelperOfWorker(thread_id);
       mailbox_->RegisterQueue(thread_id, helper_thread->GetWorkQueue());
@@ -124,6 +126,24 @@ WorkerHelperThread* Engine::GetHelperOfWorker(uint32_t thread_id) {
       return helper_thread.get();
     }
   }
+}
+
+uint32_t Engine::GetHelpeeNode() {
+  uint32_t i = 0;
+  for (; i < nodes_.size(); i++) {
+    if (node_.id == nodes_[i].id) {
+      break;
+    }
+  }
+  i = (i+1)%nodes_.size();
+  return nodes_[i].id;
+}
+
+uint32_t Engine::GetHelpeeThreadId() {
+  uint32_t node_id = GetHelpeeNode();
+  std::vector<uint32_t> workers = id_mapper_->GetWorkerThreadsForId(node_id);
+  // assume only one worker per node
+  return workers[0];
 }
 
 void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids) {
@@ -159,11 +179,12 @@ void Engine::Run(const MLTask& task) {
   for(uint32_t i = 0; i < worker_ids.size(); i++) {
     uint32_t thread_id = thread_ids[i];
     uint32_t worker_id = worker_ids[i];
-    // TODO: assign helpee to worker, for now it is just itself
-    WorkAssigner work_assigner(DataRange(i * batch_size, std::min(i * batch_size + batch_size, data_size)), sender_->GetMessageQueue(), thread_id, thread_id);
+    // helpee to worker
+    uint32_t helpee_id = GetHelpeeThreadId();
+    WorkAssigner work_assigner(DataRange(i * batch_size, std::min(i * batch_size + batch_size, data_size)), sender_->GetMessageQueue(), thread_id, helpee_id);
     WorkerHelperThread* helper_thread = GetHelperOfWorker(thread_id);
     helper_thread->RegisterWorkAssigner(&work_assigner);
-    LOG(INFO) << "Helper: " << thread_id << " <-> Helpee: " << thread_id;
+    LOG(INFO) << "Helper: " << thread_id << " <-> Helpee: " << helpee_id;
     std::thread thread(
       [thread_id, worker_id, &task, &work_assigner, this]() {
         Info info;

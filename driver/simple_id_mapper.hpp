@@ -47,7 +47,7 @@ class SimpleIdMapper : public AbstractIdMapper {
    * @param node_id the node to assign worker(user) thread
    * @return        the allocated thread id or -1
    */
-  int AllocateWorkerThread(uint32_t node_id);
+  int AllocateWorkerThread(uint32_t node_id, bool is_local_worker);
   /**
    * Deallocates the worker thread and free the id it occupies
    *

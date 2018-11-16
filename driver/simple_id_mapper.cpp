@@ -41,7 +41,7 @@ void SimpleIdMapper::Init(int num_server_threads_per_node) {
   }
 }
 
-int SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
+int SimpleIdMapper::AllocateWorkerThread(uint32_t node_id, bool is_local_worker) {
   if (node2worker_[node_id].size() >= kMaxThreadsPerNode - kMaxBgThreadsPerNode) {
     return -1;
   }
@@ -49,6 +49,12 @@ int SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
   int max_id = kMaxThreadsPerNode * (node_id + 1);
   for (int tid = min_id; tid < max_id; tid++) {
     if (node2worker_[node_id].find(tid) == node2worker_[node_id].end()) {
+      if (!is_local_worker) {
+        // if is not local worker, simply insert and return
+        node2worker_[node_id].insert(tid);
+        return tid;
+      }
+      // if is local worker, allocate a helper thread as well
       int alloc_helper = AllocateHelperForWorker(node_id, tid);
       if (alloc_helper == -1) {
         return -1;

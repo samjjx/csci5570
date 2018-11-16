@@ -188,6 +188,14 @@ class Engine {
    */
   WorkerHelperThread* GetHelperOfWorker(uint32_t thread_id);
 
+  /**
+   * Return the helpee node id of current node in round-robin
+   * @return
+   */
+  uint32_t GetHelpeeNode();
+
+  uint32_t GetHelpeeThreadId();
+
  private:
   /**
    * Register partition manager for a model to the engine
