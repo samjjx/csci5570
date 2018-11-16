@@ -23,7 +23,8 @@ void BSPModel::Clock(Message& msg) {
   add_buffer_.clear();
   // get message for next iter
   for (auto& m : get_buffer_) {
-    storage_->Get(m);
+    Message reply_msg = storage_->Get(m);
+    reply_queue_->Push(reply_msg);
   }
   get_buffer_.clear();
 }
