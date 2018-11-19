@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
 //                                parser, &data_store);
 
   // for test
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 10e5; i++) {
     lib::SVMSample sample;
     sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
     sample.y_ = -1;
@@ -108,7 +108,8 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
-  task.setDataSize(data_store.size());
+  // TODO
+  task.setDataRange(data_store.size(), data_store.size()/2);
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {
     worker_alloc.push_back({node.id, 1});  // node_id, worker_num

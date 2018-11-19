@@ -25,7 +25,7 @@ void WorkerHelperThread::Main() {
   }
 }
 
-void WorkerHelperThread::RegisterWorkAssigner(const WorkAssigner* work_assigner) {
+void WorkerHelperThread::RegisterWorkAssigner(WorkAssigner* work_assigner) {
   work_assigner_ = work_assigner;
 }
 

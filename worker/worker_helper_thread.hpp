@@ -11,14 +11,14 @@ class WorkerHelperThread : public AbstractWorkerThread {
   WorkerHelperThread(uint32_t worker_id, AbstractCallbackRunner* const callback_runner)
     : AbstractWorkerThread(worker_id), callback_runner_(callback_runner) {}
 
-    void RegisterWorkAssigner(const WorkAssigner* work_assigner);
+    void RegisterWorkAssigner(WorkAssigner* work_assigner);
 
  protected:
   void Main() override;
   void OnReceive(Message& msg) override;
  private:
   AbstractCallbackRunner* callback_runner_;
-  const WorkAssigner* work_assigner_;
+  WorkAssigner* work_assigner_;
   // there may be other functions
   //   Wait() and Nofify() for telling when parameters are ready
 

@@ -56,15 +56,27 @@ class MLTask {
    */
   bool IsSetup() const { return func_ && !worker_alloc_.empty() && !tables_.empty(); }
 
-  void setDataSize(uint32_t dsize) {data_size = dsize;}
+  /**
+   * Set total datasize and divider between my range and helpee range
+   * @param total
+   * @param divider
+   */
+  void setDataRange(uint32_t total, uint32_t divider) {
+    data_size = total;
+    data_divider = divider;
+  }
 
-  uint32_t getDataSize() const {return data_size;}
+  void getDataRange(DataRange& my_range, DataRange& helpee_range) const {
+    my_range = DataRange(0, data_divider);
+    helpee_range = DataRange(data_divider, data_size);
+  }
 
  private:
   std::function<void(const Info&)> func_;  // UDF
   std::vector<WorkerAlloc> worker_alloc_;  // the allocation of worker to the current task
   std::vector<uint32_t> tables_;           // model ids
   uint32_t data_size;
+  uint32_t data_divider;
 };
 
 }  // namespace csci5570

@@ -174,38 +174,34 @@ void Engine::Run(const MLTask& task) {
   for (uint32_t table_id : tables) {
     InitTable(table_id, thread_ids);
   }
-  uint32_t data_size = task.getDataSize();
-  uint32_t batch_size = ceil(data_size / worker_ids.size());
-  for(uint32_t i = 0; i < worker_ids.size(); i++) {
-    uint32_t thread_id = thread_ids[i];
-    uint32_t worker_id = worker_ids[i];
-    // helpee to worker
-    uint32_t helpee_id = GetHelpeeThreadId();
-    WorkAssigner work_assigner(DataRange(i * batch_size, std::min(i * batch_size + batch_size, data_size)), sender_->GetMessageQueue(), thread_id, helpee_id);
-    WorkerHelperThread* helper_thread = GetHelperOfWorker(thread_id);
-    helper_thread->RegisterWorkAssigner(&work_assigner);
-    LOG(INFO) << "Helper: " << thread_id << " <-> Helpee: " << helpee_id;
-    std::thread thread(
-      [thread_id, worker_id, &task, &work_assigner, this]() {
-        Info info;
-        info.thread_id = thread_id;
-        info.worker_id = worker_id;
-        info.send_queue = sender_->GetMessageQueue();
-        info.work_assigner = &work_assigner;
-        for(auto& kv : partition_manager_map_) {
-          info.partition_manager_map[kv.first] = kv.second.get();
-        }
-        info.callback_runner = callback_runner_.get();
-        task.RunLambda(info);
-        // free worker thread id
-        id_mapper_->DeallocateWorkerThread(node_.id, thread_id);
-      });
-    threads.push_back(std::move(thread));
-  }
-  for(std::thread& th : threads) {
-    if (th.joinable()) {
-      th.join();
-    }
+  DataRange data_range, helpee_range;
+  task.getDataRange(data_range, helpee_range);
+  // one worker for one node now
+  uint32_t thread_id = thread_ids[0];
+  uint32_t worker_id = worker_ids[0];
+  // helpee to worker
+  uint32_t helpee_id = GetHelpeeThreadId();
+  WorkAssigner work_assigner(data_range, helpee_range, sender_->GetMessageQueue(), thread_id, helpee_id);
+  WorkerHelperThread* helper_thread = GetHelperOfWorker(thread_id);
+  helper_thread->RegisterWorkAssigner(&work_assigner);
+  LOG(INFO) << "Helper: " << thread_id << " <-> Helpee: " << helpee_id;
+  std::thread thread(
+    [thread_id, worker_id, &task, &work_assigner, this]() {
+      Info info;
+      info.thread_id = thread_id;
+      info.worker_id = worker_id;
+      info.send_queue = sender_->GetMessageQueue();
+      info.work_assigner = &work_assigner;
+      for(auto& kv : partition_manager_map_) {
+        info.partition_manager_map[kv.first] = kv.second.get();
+      }
+      info.callback_runner = callback_runner_.get();
+      task.RunLambda(info);
+      // free worker thread id
+      id_mapper_->DeallocateWorkerThread(node_.id, thread_id);
+    });
+  if (thread.joinable()) {
+    thread.join();
   }
 }
 

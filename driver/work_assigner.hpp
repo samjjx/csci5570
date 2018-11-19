@@ -12,6 +12,11 @@
 
 namespace csci5570 {
   struct DataRange {
+    DataRange() {
+      start = 0;
+      end = 0;
+      length = 0;
+    }
     DataRange(uint32_t start_, uint32_t end_)
       : start(start_), end(end_) {
       length = end - start;
@@ -24,11 +29,12 @@ namespace csci5570 {
   class WorkAssigner {
   public:
     WorkAssigner() = delete;
-    WorkAssigner(DataRange range, ThreadsafeQueue<Message>* const sender_queue, uint32_t thread_id, uint32_t helpee)
-      : range_(range), sender_queue_(sender_queue), thread_id_(thread_id), helpee_id_(helpee) {
+    WorkAssigner(DataRange range, DataRange helpee_range, ThreadsafeQueue<Message>* const sender_queue, uint32_t thread_id, uint32_t helpee)
+      : range_(range), helpee_range_(helpee_range), sender_queue_(sender_queue), thread_id_(thread_id), helpee_id_(helpee) {
       assert(range.length > 0);
       iter_num = 0;
       cur_sample = 0;
+      stop_idx = range_.end;
       avg_iter_time = std::numeric_limits<double>::infinity();
     };
 
@@ -46,10 +52,32 @@ namespace csci5570 {
       if (cur_sample - range_.start == uint32_t(range_.length * check_point_)) {
         report_progress();
       }
-      if (cur_sample == range_.end) {
-        cur_sample = range_.start;
-        iter_num++;
-        return -1;
+
+      // reach the end of my data
+      if (cur_sample == stop_idx) {
+        if (help_request_status == 1 && stop_idx < range_.end) {
+          // hasn't received begun-helping
+          cancel_reassigment();
+          stop_idx = range_.end;
+          help_request_status = 0;
+          return cur_sample++;
+        } else if (help_request_status == 2) {
+          // has begun helping, wait for helper
+          while(help_request_status == 2) {}
+          help_request_status = 0;
+          stop_idx = range_.end;
+          // start over
+          cur_sample = range_.start;
+          iter_num++;
+          return -1;
+        } else {
+          help_request_status = 0;
+          stop_idx = range_.end;
+          // start over
+          cur_sample = range_.start;
+          iter_num++;
+          return -1;
+        }
       }
       return cur_sample++;
     }
@@ -93,23 +121,81 @@ namespace csci5570 {
       return progress_diff > 0.2;
     }
 
-    void onReceive(csci5570::Message &msg) const {
+    void ask_for_help(uint32_t helper_id) {
+      uint32_t amount = (uint32_t)std::floor(reassign_ratio * range_.length);
+      if (amount == 0) {return;}
+      uint32_t start = range_.end - amount;
+      uint32_t end = range_.end;
+      Message m;
+      m.meta.flag = Flag::kDoThis;
+      m.meta.sender = thread_id_;
+      m.meta.recver = helper_id;
+      third_party::SArray<long> data;
+      long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+              std::chrono::system_clock::now().time_since_epoch()
+      ).count();
+      // iteration, start, end, timestamp
+      data.push_back(long(iter_num));
+      data.push_back(long(start));
+      data.push_back(long(end));
+      data.push_back(timestamp);
+      m.AddData(data);
+      sender_queue_->Push(m);
+      help_request_status = 1;
+      helper_id_ = helper_id;
+      stop_idx = start;
+    }
+
+    void cancel_reassigment() {
+      Message m;
+      m.meta.flag = Flag::kCancelHelp;
+      m.meta.sender = thread_id_;
+      m.meta.recver = helper_id_;
+      // iteration, timestamp
+      third_party::SArray<long> data;
+      long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+              std::chrono::system_clock::now().time_since_epoch()
+      ).count();
+      data.push_back(long(iter_num));
+      data.push_back(timestamp);
+      m.AddData(data);
+      sender_queue_->Push(m);
+      help_request_status = 0;
+    }
+
+    void onReceive(csci5570::Message &msg) {
       LOG(INFO) << msg.DebugString();
       if (msg.meta.flag == Flag::kProgressReport) {
-        if (check_is_behind(msg)) {
+        if (check_is_behind(msg)
+            && double(range_.end - cur_sample) / range_.length > reassign_ratio) {
           LOG(INFO) << "I'm behind, I need help.";
+          ask_for_help(uint32_t(msg.meta.sender));
         }
+      }
+      if (msg.meta.flag == Flag::kDoThis) {
+        third_party::SArray<long> msg_data(msg.data[0]);
+        LOG(INFO) << "Rceived help request: " << msg_data[1] << "-" << msg_data[2];
+      }
+      if (msg.meta.flag == Flag::kBegunHelping) {
+        help_request_status = 2;
+      }
+      if (msg.meta.flag == Flag::kHelpCompleted) {
+        help_request_status = 3;
       }
     }
   private:
-    DataRange range_;
+    DataRange range_; // data range of mine
+    DataRange helpee_range_; // data range of helpee
     uint32_t iter_num;
     uint32_t cur_sample;
     uint32_t thread_id_;
+    uint32_t stop_idx; // for work reassigment
     std::clock_t start = 0;
     double check_point_ = 0.75; // progress check point of each iter
+    double reassign_ratio = 0.025; // percentage of work to reassign
     double avg_iter_time; // average time to complete an interation
-//    uint32_t helper_id_; // thread to help me
+    uint8_t help_request_status = 0; // 0: not sent 1: sent 2: begin 3: complete
+    uint32_t helper_id_; // thread to help me
     uint32_t helpee_id_; // thread that may need my help
     ThreadsafeQueue<Message>* const sender_queue_;             // not owned
     ThreadsafeQueue<Message> msg_queue_; // received msgs
