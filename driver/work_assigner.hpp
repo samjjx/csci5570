@@ -53,36 +53,6 @@ namespace csci5570 {
         report_progress();
       }
 
-      if(high_priority.length != 0 )
-      {
-        cur_sample = high_priority.start;
-        high_priority.start++;
-        high_priority.length--;
-        return cur_sample;
-      }
-      else if ( low_priority.length !=0 )
-      {
-        cur_sample = low_priority.start;
-        low_priority.start++;
-        low_priority.length--;
-        return cur_sample;
-      }
-      if( help_request_status == 3 && low_priority.length == 0 && high_priority.length == 0 )
-      {
-        Message m;
-        m.meta.flag = Flag::kHelpCompleted;
-        m.meta.sender = thread_id_;
-        m.meta.recver = helpee_id_;
-        third_party::SArray<long>data;
-        long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-                std::chrono::system_clock::now().time_since_epoch()
-        ).count();
-        data.push_back(timestamp);
-        m.AddData(data);
-        sender_queue_->Push(m);
-        //send help_completed
-      }
-
       // reach the end of my data
       if (cur_sample == stop_idx) {
         if (help_request_status == 1 && stop_idx < range_.end) {
@@ -176,45 +146,6 @@ namespace csci5570 {
       stop_idx = start;
     }
 
-    // 这个条件语句要记得看一下怎么办
-    void help_with_work(Message &msg)
-    {
-      if ( msg.data[1] >  lastest_cancel_time )//这个地方，latest time可以
-      {
-        if ( msg.data[0] < iter_num )
-        {
-          Message m;
-          m.meta.flag = Flag::kBegunHelping;
-          m.meta.sender = thread_id_;
-          m.meta.recver = helpee_id_;
-          third_party::SArray<long> data;
-          long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-                  std::chrono::system_clock::now().time_since_epoch()
-          ).count();
-          data.push_back(timestamp);
-          m.AddData(data);
-          sender_queue_->Push(m);
-          //发送beginhelp
-          //放进优先队列
-          //马上开始工作
-          //要在next_sample加相关的逻辑
-
-        }
-        else if ( msg.data[0] == iter_num )
-        {
-          //放入低优先级队列
-          //也在next_sample加相关逻辑
-        }
-      }
-
-
-
-    }
-
-
-
-
-
     void cancel_reassigment() {
       Message m;
       m.meta.flag = Flag::kCancelHelp;
@@ -244,8 +175,6 @@ namespace csci5570 {
       if (msg.meta.flag == Flag::kDoThis) {
         third_party::SArray<long> msg_data(msg.data[0]);
         LOG(INFO) << "Rceived help request: " << msg_data[1] << "-" << msg_data[2];
-        help_with_work(msg);
-        msg_queue_.Push(msg);
       }
       if (msg.meta.flag == Flag::kBegunHelping) {
         help_request_status = 2;
@@ -253,13 +182,8 @@ namespace csci5570 {
       if (msg.meta.flag == Flag::kHelpCompleted) {
         help_request_status = 3;
       }
-      if (msg.meta.flag == Flag::kCancelHelp){
-        lastest_cancel_time = msg.data[1];
-
-      }
     }
   private:
-      long lastest_cancel_time;
     DataRange range_; // data range of mine
     DataRange helpee_range_; // data range of helpee
     uint32_t iter_num;
@@ -275,9 +199,5 @@ namespace csci5570 {
     uint32_t helpee_id_; // thread that may need my help
     ThreadsafeQueue<Message>* const sender_queue_;             // not owned
     ThreadsafeQueue<Message> msg_queue_; // received msgs
-    ThreadsafeQueue<u_int32_t > high_priority_sample;
-    ThreadsafeQueue<uint32_t> low_priority_sample;
-    DataRange high_priority;
-    DataRange low_priority;
   };
 }
