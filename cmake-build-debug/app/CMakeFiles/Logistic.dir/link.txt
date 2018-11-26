@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/Logistic.dir/run_logistic.cpp.o  -o ../Logistic ../test/libcsci5570.a ../lib/libglog.a ../lib/libgflags.a ../lib/libzmq.so 

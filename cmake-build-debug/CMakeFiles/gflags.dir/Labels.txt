@@ -1,0 +1,13 @@
+# Target labels
+ gflags
+# Source files and their labels
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gflags
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gflags.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gflags-complete.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-install.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-mkdir.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-download.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-update.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-patch.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-configure.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-build.rule

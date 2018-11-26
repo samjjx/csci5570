@@ -1,0 +1,1 @@
+cmd='/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake;-DCMAKE_INSTALL_PREFIX:PATH=/Users/faraway/ps-project/feature_csci5570/cmake-build-debug;-DZMQ_BUILD_TESTS=OFF;-GCodeBlocks - Unix Makefiles;<SOURCE_DIR><SOURCE_SUBDIR>'

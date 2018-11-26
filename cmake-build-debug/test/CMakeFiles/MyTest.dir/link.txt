@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/MyTest.dir/test_worker.cpp.o  -o ../MyTest libcsci5570.a ../lib/libglog.a ../lib/libgflags.a ../lib/libzmq.so ../lib/libgtest.a ../lib/libgtest_main.a ../lib/libgmock.a ../lib/libgmock_main.a 

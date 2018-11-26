@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gtest"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gtest.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gtest-complete.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gtest-stamp/gtest-install.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gtest-stamp/gtest-mkdir.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gtest-stamp/gtest-download.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gtest-stamp/gtest-update.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gtest-stamp/gtest-patch.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gtest-stamp/gtest-configure.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gtest-stamp/gtest-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"gtest"
+		],
+		"name" : "gtest"
+	}
+}

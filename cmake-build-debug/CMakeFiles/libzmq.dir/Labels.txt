@@ -1,0 +1,13 @@
+# Target labels
+ libzmq
+# Source files and their labels
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/libzmq
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/libzmq.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/libzmq-complete.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/libzmq-stamp/libzmq-install.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/libzmq-stamp/libzmq-mkdir.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/libzmq-stamp/libzmq-download.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/libzmq-stamp/libzmq-update.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/libzmq-stamp/libzmq-patch.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/libzmq-stamp/libzmq-configure.rule
+/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/libzmq-stamp/libzmq-build.rule

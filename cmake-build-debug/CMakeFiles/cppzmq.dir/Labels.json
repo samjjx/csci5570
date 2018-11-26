@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/cppzmq"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/cppzmq.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/cppzmq-complete.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/cppzmq-stamp/cppzmq-install.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/cppzmq-stamp/cppzmq-mkdir.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/cppzmq-stamp/cppzmq-download.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/cppzmq-stamp/cppzmq-update.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/cppzmq-stamp/cppzmq-patch.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/cppzmq-stamp/cppzmq-configure.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/cppzmq-stamp/cppzmq-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"cppzmq"
+		],
+		"name" : "cppzmq"
+	}
+}

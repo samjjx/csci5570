@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gflags"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gflags.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/CMakeFiles/gflags-complete.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-install.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-mkdir.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-download.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-update.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-patch.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-configure.rule"
+		},
+		{
+			"file" : "/Users/faraway/ps-project/feature_csci5570/cmake-build-debug/third_party/src/gflags-stamp/gflags-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"gflags"
+		],
+		"name" : "gflags"
+	}
+}
