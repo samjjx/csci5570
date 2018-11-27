@@ -77,6 +77,21 @@ namespace csci5570 {
       if (cur_sample == stop_idx) {
           if( low_priority_queue.Size() != 0 ) {
               low_priority_queue.WaitAndPop(&helpee_cur_sample);
+              if ( wait_status == 0 )
+              {
+                  Message m;
+                  m.meta.flag = Flag::kBegunHelping;
+                  m.meta.sender = thread_id_;
+                  m.meta.recver = helpee_id_;
+                  third_party::SArray<long> data;
+                  long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+                          std::chrono::system_clock::now().time_since_epoch()
+                  ).count();
+                  data.push_back(timestamp);
+                  m.AddData(data);
+                  sender_queue_->Push(m);
+                  wait_status = 1;
+              }
               if (low_priority_queue.Size() == 0) {
                   Message msg;
                   msg.meta.sender = thread_id_;
@@ -106,6 +121,7 @@ namespace csci5570 {
           // start over
           cur_sample = range_.start;
           iter_num++;
+          wait_status = 0;
           return -1;
         } else {
           help_request_status = 0;
@@ -113,6 +129,7 @@ namespace csci5570 {
           // start over
           cur_sample = range_.start;
           iter_num++;
+          wait_status = 0;
           return -1;
         }
       }
@@ -211,7 +228,7 @@ namespace csci5570 {
               sender_queue_->Push(m);
 
               // 置入优先队列
-              third_party::SArray<u_int32_t > msg_data(msg.data[0]);
+              third_party::SArray<long> msg_data(msg.data[0]);
               u_int32_t sample = msg_data[1] + range_.length;
               for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
               {
@@ -224,7 +241,7 @@ namespace csci5570 {
           {
 
               //置入低优先级队列
-              third_party::SArray<u_int32_t > msg_data(msg.data[0]);
+              third_party::SArray<long> msg_data(msg.data[0]);
               u_int32_t sample = msg_data[1] + range_.length;
               for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
               {
@@ -296,7 +313,7 @@ namespace csci5570 {
       ThreadsafeQueue<u_int32_t> high_priority_queue;
       ThreadsafeQueue<u_int32_t> low_priority_queue;
       u_int32_t helpee_cur_sample;
-      long lastest_cancel_time;
-
+      long lastest_cancel_time = 0;
+      u_int32_t wait_status = 0; //0 : wait to help others 1: has begun helping
   };
 }
