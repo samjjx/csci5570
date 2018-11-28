@@ -46,7 +46,7 @@ class HDFSBlockAssigner {
 
   hdfsFS fs_ = NULL;
   std::set<int> finished_workers_;
-  int num_workers_alive_;
+  int num_workers_alive_ = 0;
   std::map<std::string, int> finish_dict;
 
   // {task_id: {{url: {host:[{filename,offset,block_location}, {filename,offset,block_location}...]}},....}},...

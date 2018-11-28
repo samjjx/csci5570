@@ -27,7 +27,7 @@ namespace csci5570 {
         public:
             template <typename Parse>  // e.g. std::function<Sample(boost::string_ref, int)>
             static void load(std::string url, std::string hdfs_namenode, std::string master_host, std::string worker_host,
-                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore) {
+                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, uint32_t id) {
               // 1. Connect to the data source, e.g. HDFS, via the modules in io
               // 2. Extract and parse lines
               // 3. Put samples into datastore
@@ -41,12 +41,7 @@ namespace csci5570 {
 
               std::thread master_thread;
               // 1. Spawn the HDFS block assigner thread on the master
-              if(worker_host == master_host) {
-                master_thread = std::thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode] {
-                    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port);
-                    hdfs_block_assigner.Serve();
-                });
-              }
+
               // 2. Prepare meta info for the master and workers
               int proc_id = getpid();  // the actual process id, or you can assign a virtual one, as long as it is distinct
 
@@ -54,9 +49,16 @@ namespace csci5570 {
               coordinator.serve();
               LOG(INFO) << "Coordinator begins serving";
 
-              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore,n_features] {
+              if(worker_host == master_host) {
+                master_thread = std::thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode] {
+                    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port);
+                    hdfs_block_assigner.Serve();
+                });
+              }
+
+              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore,n_features, id] {
                   int num_threads = 1;
-                  int second_id = 0;
+                  int second_id = id;
 
                   LOG(INFO) << "Line input start to prepare";
                   LineInputFormat infmt(url, num_threads, second_id, &coordinator, worker_host, hdfs_namenode,
