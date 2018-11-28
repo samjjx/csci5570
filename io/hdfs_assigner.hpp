@@ -26,7 +26,7 @@ class HDFSBlockAssigner {
     bool operator==(const BlkDesc& other) const;
   };
 
-  HDFSBlockAssigner(std::string hdfsNameNode, int hdfsNameNodePort, zmq::context_t* context, int master_port);
+  HDFSBlockAssigner(std::string hdfsNameNode, int hdfsNameNodePort, zmq::context_t* context, int master_port, int total_nodes);
   ~HDFSBlockAssigner() = default;
 
   void Serve();
@@ -47,6 +47,7 @@ class HDFSBlockAssigner {
   hdfsFS fs_ = NULL;
   std::set<int> finished_workers_;
   int num_workers_alive_ = 0;
+  int total_nodes_;
   std::map<std::string, int> finish_dict;
 
   // {task_id: {{url: {host:[{filename,offset,block_location}, {filename,offset,block_location}...]}},....}},...

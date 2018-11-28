@@ -15,9 +15,10 @@ bool HDFSBlockAssigner::BlkDesc::operator==(const BlkDesc& other) const {
 }
 
 HDFSBlockAssigner::HDFSBlockAssigner(std::string hdfs_namenode, int hdfs_namenode_port, zmq::context_t* context,
-                                     int master_port) {
+                                     int master_port, int total_nodes) {
   init_socket(master_port, context);
   init_hdfs(hdfs_namenode, hdfs_namenode_port);
+  total_nodes_ = total_nodes;
 }
 
 void HDFSBlockAssigner::Serve() {
@@ -59,7 +60,7 @@ void HDFSBlockAssigner::handle_exit() {
 
   LOG(INFO) << "master => worker finished @" << worker_name << "-" << std::to_string(worker_id);
 
-  if ((finished_workers_.size() == 2)) {
+  if ((finished_workers_.size() == total_nodes_)) {
     halt();
   }
 }

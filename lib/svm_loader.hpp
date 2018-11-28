@@ -27,7 +27,7 @@ namespace csci5570 {
         public:
             template <typename Parse>  // e.g. std::function<Sample(boost::string_ref, int)>
             static void load(std::string url, std::string hdfs_namenode, std::string master_host, std::string worker_host,
-                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, uint32_t id) {
+                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, uint32_t id, int total_nodes) {
               // 1. Connect to the data source, e.g. HDFS, via the modules in io
               // 2. Extract and parse lines
               // 3. Put samples into datastore
@@ -50,8 +50,8 @@ namespace csci5570 {
               LOG(INFO) << "Coordinator begins serving";
 
               if(worker_host == master_host) {
-                master_thread = std::thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode] {
-                    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port);
+                master_thread = std::thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode, total_nodes] {
+                    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port, total_nodes);
                     hdfs_block_assigner.Serve();
                 });
               }

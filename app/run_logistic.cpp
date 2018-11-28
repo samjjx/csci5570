@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                                parser, &data_store, id);
+                                parser, &data_store, id, nodes.size());
 
 //  lib::SVMSample sample;
 //  sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
