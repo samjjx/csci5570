@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 //  std::string url = "hdfs:///datasets/classification/a9";
   std::string url = FLAGS_input;
   std::string hdfs_namenode = "proj10";                        // Do not change
-  std::string master_host = node->hostname;  // Set to worker name
+  std::string master_host = "proj10";  // Set to worker name
   std::string worker_host = node->hostname;  // Set to worker name
   int hdfs_namenode_port = 9000;
   int master_port = 19817;  // use a random port number to avoid collision with other users

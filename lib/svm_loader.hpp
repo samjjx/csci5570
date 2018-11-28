@@ -39,11 +39,14 @@ namespace csci5570 {
 //              std::string master_host = "proj10";  // change to the node you are actually using
 //              std::string worker_host = "proj10";  // change to the node you are actually using
 
+              std::thread master_thread;
               // 1. Spawn the HDFS block assigner thread on the master
-              std::thread master_thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode] {
-                  HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port);
-                  hdfs_block_assigner.Serve();
-              });
+              if(worker_host == master_host) {
+                master_thread = std::thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode] {
+                    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port);
+                    hdfs_block_assigner.Serve();
+                });
+              }
               // 2. Prepare meta info for the master and workers
               int proc_id = getpid();  // the actual process id, or you can assign a virtual one, as long as it is distinct
 
@@ -79,7 +82,9 @@ namespace csci5570 {
                   finish_signal << worker_host << second_id;
                   coordinator.notify_master(finish_signal, 300);
               });
-              master_thread.join();
+              if(worker_host == master_host)
+                master_thread.join();
+
               worker_thread.join();
             }
         };  // Class DataLoader
