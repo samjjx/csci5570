@@ -77,7 +77,21 @@ namespace csci5570 {
       if (cur_sample == stop_idx) {
           if( low_priority_queue.Size() != 0 ) {
               low_priority_queue.WaitAndPop(&helpee_cur_sample);
-              LOG(INFO) << helpee_cur_sample;
+              if ( wait_status == 0 )
+              {
+                  Message m;
+                  m.meta.flag = Flag::kBegunHelping;
+                  m.meta.sender = thread_id_;
+                  m.meta.recver = helpee_id_;
+                  third_party::SArray<long> data;
+                  long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+                          std::chrono::system_clock::now().time_since_epoch()
+                  ).count();
+                  data.push_back(timestamp);
+                  m.AddData(data);
+                  sender_queue_->Push(m);
+                  wait_status = 1;
+              }
               if (low_priority_queue.Size() == 0) {
                   Message msg;
                   msg.meta.sender = thread_id_;
@@ -107,6 +121,7 @@ namespace csci5570 {
           // start over
           cur_sample = range_.start;
           iter_num++;
+          wait_status = 0;
           return -1;
         } else {
           help_request_status = 0;
@@ -114,6 +129,7 @@ namespace csci5570 {
           // start over
           cur_sample = range_.start;
           iter_num++;
+          wait_status = 0;
           return -1;
         }
       }
@@ -294,10 +310,10 @@ namespace csci5570 {
     uint32_t helpee_id_; // thread that may need my help
     ThreadsafeQueue<Message>* const sender_queue_;             // not owned
     ThreadsafeQueue<Message> msg_queue_; // received msgs
-      ThreadsafeQueue<u_int32_t> high_priority_queue;
-      ThreadsafeQueue<u_int32_t> low_priority_queue;
-      u_int32_t helpee_cur_sample;
-      long lastest_cancel_time = 0;
-
+    ThreadsafeQueue<u_int32_t> high_priority_queue;
+    ThreadsafeQueue<u_int32_t> low_priority_queue;
+    u_int32_t helpee_cur_sample;
+    long lastest_cancel_time = 0;
+    u_int32_t wait_status = 0; //0 : wait to help others 1: has begun helping
   };
 }
