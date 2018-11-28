@@ -77,6 +77,7 @@ namespace csci5570 {
       if (cur_sample == stop_idx) {
           if( low_priority_queue.Size() != 0 ) {
               low_priority_queue.WaitAndPop(&helpee_cur_sample);
+              LOG(INFO) << helpee_cur_sample;
               if (low_priority_queue.Size() == 0) {
                   Message msg;
                   msg.meta.sender = thread_id_;
@@ -211,7 +212,7 @@ namespace csci5570 {
               sender_queue_->Push(m);
 
               // 置入优先队列
-              third_party::SArray<u_int32_t > msg_data(msg.data[0]);
+              third_party::SArray<long> msg_data(msg.data[0]);
               u_int32_t sample = msg_data[1] + range_.length;
               for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
               {
@@ -224,7 +225,7 @@ namespace csci5570 {
           {
 
               //置入低优先级队列
-              third_party::SArray<u_int32_t > msg_data(msg.data[0]);
+              third_party::SArray<long> msg_data(msg.data[0]);
               u_int32_t sample = msg_data[1] + range_.length;
               for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
               {
@@ -296,7 +297,7 @@ namespace csci5570 {
       ThreadsafeQueue<u_int32_t> high_priority_queue;
       ThreadsafeQueue<u_int32_t> low_priority_queue;
       u_int32_t helpee_cur_sample;
-      long lastest_cancel_time;
+      long lastest_cancel_time = 0;
 
   };
 }
