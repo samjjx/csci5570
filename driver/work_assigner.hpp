@@ -49,65 +49,70 @@ namespace csci5570 {
         }
         start = now;
       }
-      if (cur_sample - range_.start == uint32_t(range_.length * check_point_)) {
+      if (helping_status == -1 && cur_sample - range_.start == uint32_t(range_.length * check_point_)) {
         report_progress();
+        while(helping_status == 1) {}; // wait for report_progress response
       }
 
-        if ( high_priority_queue.Size() != 0 )
+      if ( high_priority_queue.Size() != 0 ) {
+        helping_status = 3;
+        high_priority_queue.WaitAndPop(&helpee_cur_sample);
+        if (high_priority_queue.Size() == 0 )
         {
-            high_priority_queue.WaitAndPop(&helpee_cur_sample);
-            if (high_priority_queue.Size() == 0 )
-            {
-                Message msg;
-                msg.meta.sender = thread_id_;
-                msg.meta.recver = helpee_id_;
-                msg.meta.flag = Flag::kHelpCompleted;
-                third_party::SArray<long> data;
-                long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-                        std::chrono::system_clock::now().time_since_epoch()
-                ).count();
-                data.push_back(timestamp);
-                msg.AddData(data);
-                sender_queue_->Push(msg);
-            }
-            return helpee_cur_sample;
+          Message msg;
+          msg.meta.sender = thread_id_;
+          msg.meta.recver = helpee_id_;
+          msg.meta.flag = Flag::kHelpCompleted;
+          third_party::SArray<long> data;
+          long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+                  std::chrono::system_clock::now().time_since_epoch()
+          ).count();
+          data.push_back(timestamp);
+          msg.AddData(data);
+          sender_queue_->Push(msg);
+          LOG(INFO) << "finished high_priority_queue";
         }
+        return helpee_cur_sample;
+      }
 
       // reach the end of my data
       if (cur_sample == stop_idx) {
-          if( low_priority_queue.Size() != 0 ) {
-              low_priority_queue.WaitAndPop(&helpee_cur_sample);
-              if ( wait_status == 0 )
-              {
-                  Message m;
-                  m.meta.flag = Flag::kBegunHelping;
-                  m.meta.sender = thread_id_;
-                  m.meta.recver = helpee_id_;
-                  third_party::SArray<long> data;
-                  long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-                          std::chrono::system_clock::now().time_since_epoch()
-                  ).count();
-                  data.push_back(timestamp);
-                  m.AddData(data);
-                  sender_queue_->Push(m);
-                  wait_status = 1;
-              }
-              if (low_priority_queue.Size() == 0) {
-                  Message msg;
-                  msg.meta.sender = thread_id_;
-                  msg.meta.recver = helpee_id_;
-                  msg.meta.flag = Flag::kHelpCompleted;
-                  third_party::SArray<long> data;
-                  long timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          std::chrono::system_clock::now().time_since_epoch()
-                  ).count();
-                  data.push_back(timestamp);
-                  msg.AddData(data);
-                  sender_queue_->Push(msg);
-              }
-              return helpee_cur_sample;
+        if( low_priority_queue.Size() != 0 ) {
+          low_priority_queue.WaitAndPop(&helpee_cur_sample);
+          if ( helping_status == 2 )
+          {
+            Message m;
+            m.meta.flag = Flag::kBegunHelping;
+            m.meta.sender = thread_id_;
+            m.meta.recver = helpee_id_;
+            third_party::SArray<long> data;
+            long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+                    std::chrono::system_clock::now().time_since_epoch()
+            ).count();
+            data.push_back(timestamp);
+            m.AddData(data);
+            sender_queue_->Push(m);
+            LOG(INFO) << "start low_priority_queue";
+            helping_status = 3;
           }
+          if (low_priority_queue.Size() == 0) {
+            Message msg;
+            msg.meta.sender = thread_id_;
+            msg.meta.recver = helpee_id_;
+            msg.meta.flag = Flag::kHelpCompleted;
+            third_party::SArray<long> data;
+            long timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::system_clock::now().time_since_epoch()
+            ).count();
+            data.push_back(timestamp);
+            msg.AddData(data);
+            sender_queue_->Push(msg);
+            LOG(INFO) << "finished low_priority_queue";
+          }
+          return helpee_cur_sample;
+        }
         if (help_request_status == 1 && stop_idx < range_.end) {
+          LOG(INFO) << "cancel_reassigment";
           // hasn't received begun-helping
           cancel_reassigment();
           stop_idx = range_.end;
@@ -117,19 +122,19 @@ namespace csci5570 {
           // has begun helping, wait for helper
           while(help_request_status == 2) {}
           help_request_status = 0;
+          helping_status = -1;
           stop_idx = range_.end;
           // start over
           cur_sample = range_.start;
           iter_num++;
-          wait_status = 0;
           return -1;
         } else {
           help_request_status = 0;
+          helping_status = -1;
           stop_idx = range_.end;
           // start over
           cur_sample = range_.start;
           iter_num++;
-          wait_status = 0;
           return -1;
         }
       }
@@ -155,9 +160,10 @@ namespace csci5570 {
       data.push_back(timestamp);
       m.AddData(data);
       sender_queue_->Push(m);
+      helping_status = 1;
     }
 
-    bool check_is_behind(csci5570::Message &msg) const {
+    float check_is_behind(csci5570::Message &msg) const {
       third_party::SArray<long> msg_data(msg.data[0]);
       long his_iter_num = msg_data[0];
       long his_progress = msg_data[1];
@@ -172,11 +178,12 @@ namespace csci5570 {
       ).count();
       double time_diff = double(now - timestamp) / 1000;
       double progress_diff = completion_diff + std::min(time_diff / avg_iter_time, 1-check_point_);
-      return progress_diff > 0.2;
+//      return progress_diff > 0.2;
+      return progress_diff;
     }
 
-    void ask_for_help(uint32_t helper_id) {
-      uint32_t amount = (uint32_t)std::floor(reassign_ratio * range_.length);
+    void ask_for_help(uint32_t helper_id, float ratio) {
+      uint32_t amount = (uint32_t)std::floor(ratio * range_.length);
       if (amount == 0) {return;}
       uint32_t start = range_.end - amount;
       uint32_t end = range_.end;
@@ -199,8 +206,24 @@ namespace csci5570 {
       helper_id_ = helper_id;
       stop_idx = start;
     }
-      void help_with_work(Message &msg)
-      {
+
+    void tell_dont_help(uint32_t helper_id) {
+      Message m;
+      m.meta.flag = Flag::kDontNeedHelp;
+      m.meta.sender = thread_id_;
+      m.meta.recver = helper_id;
+      third_party::SArray<long> data;
+      long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+              std::chrono::system_clock::now().time_since_epoch()
+      ).count();
+      // iteration, timestamp
+      data.push_back(long(iter_num));
+      data.push_back(timestamp);
+      m.AddData(data);
+      sender_queue_->Push(m);
+    }
+
+    void help_with_work(Message &msg) {
       // msg : do-this msg
       // data: 0 : iter
       //       1 : start
@@ -210,47 +233,46 @@ namespace csci5570 {
 
       third_party::SArray<long> msg_data(msg.data[0]);
 
-      if ( msg_data[3] > lastest_cancel_time )
-      {
-          if ( msg_data[0] < iter_num )
+      if ( msg_data[3] > lastest_cancel_time ) {
+        if ( msg_data[0] < iter_num ) {
+          // BUG: if current thread had reach end, next_sample will not be called anymore
+          // hence will never begin helping
+          //send beginhelp
+          Message m;
+          m.meta.flag = Flag::kBegunHelping;
+          m.meta.sender = thread_id_;
+          m.meta.recver = helpee_id_;
+          third_party::SArray<long> data;
+          long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
+                  std::chrono::system_clock::now().time_since_epoch()
+          ).count();
+          data.push_back(timestamp);
+          m.AddData(data);
+          sender_queue_->Push(m);
+          LOG(INFO) << "add to high_priority_queue";
+          // 置入优先队列
+          third_party::SArray<long> msg_data(msg.data[0]);
+          for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
-              //send beginhelp
-              Message m;
-              m.meta.flag = Flag::kBegunHelping;
-              m.meta.sender = thread_id_;
-              m.meta.recver = helpee_id_;
-              third_party::SArray<long> data;
-              long timestamp = std::chrono::duration_cast< std::chrono::milliseconds >(
-                      std::chrono::system_clock::now().time_since_epoch()
-              ).count();
-              data.push_back(timestamp);
-              m.AddData(data);
-              sender_queue_->Push(m);
-
-              // 置入优先队列
-              third_party::SArray<long> msg_data(msg.data[0]);
-              u_int32_t sample = msg_data[1] + range_.length;
-              for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
-              {
-                  high_priority_queue.Push(sample);
-                  sample++;
-              }
-
+            high_priority_queue.Push(i + range_.length);
           }
-          else if ( msg_data[0] == iter_num )
+          helping_status = 2;
+        }
+        else if ( msg_data[0] == iter_num ) {
+          LOG(INFO) << "add to low_priority_queue";
+          //置入低优先级队列
+          third_party::SArray<long> msg_data(msg.data[0]);
+          u_int32_t sample = msg_data[1] + range_.length;
+          for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
           {
-
-              //置入低优先级队列
-              third_party::SArray<long> msg_data(msg.data[0]);
-              u_int32_t sample = msg_data[1] + range_.length;
-              for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
-              {
-                  low_priority_queue.Push(sample);
-                  sample++;
-              }
+            low_priority_queue.Push(sample);
+            sample++;
           }
+          helping_status = 2;
+        }
       }
-  }
+    }
+
     void cancel_reassigment() {
       Message m;
       m.meta.flag = Flag::kCancelHelp;
@@ -271,11 +293,20 @@ namespace csci5570 {
     void onReceive(csci5570::Message &msg) {
       LOG(INFO) << msg.DebugString();
       if (msg.meta.flag == Flag::kProgressReport) {
-        if (check_is_behind(msg)
-            && double(range_.end - cur_sample) / range_.length > reassign_ratio) {
-          LOG(INFO) << "I'm behind, I need help.";
-          ask_for_help(uint32_t(msg.meta.sender));
+        float progress_diff = check_is_behind(msg);
+        float unfinished = double(range_.end - cur_sample) / range_.length;
+        if (progress_diff > 0.2
+            && double(range_.end - cur_sample) / range_.length > min_reassign_ratio) {
+          float ratio = std::min(progress_diff / 2, unfinished / 2);
+          LOG(INFO) << "I'm behind, I need help. Reassign " << ratio * 100 << "% of work";
+          ask_for_help(uint32_t(msg.meta.sender), ratio);
+        } else {
+          tell_dont_help(msg.meta.sender);
         }
+      }
+      if (msg.meta.flag == Flag::kDontNeedHelp) {
+        // helpee don't need help
+        helping_status = 0;
       }
       if (msg.meta.flag == Flag::kDoThis) {
         third_party::SArray<long> msg_data(msg.data[0]);
@@ -291,7 +322,6 @@ namespace csci5570 {
       if (msg.meta.flag == Flag::kCancelHelp){
           third_party::SArray<long> msg_data(msg.data[0]);
           lastest_cancel_time = msg_data[0];
-
       }
     }
   private:
@@ -303,17 +333,18 @@ namespace csci5570 {
     uint32_t stop_idx; // for work reassigment
     std::clock_t start = 0;
     double check_point_ = 0.75; // progress check point of each iter
-    double reassign_ratio = 0.025; // percentage of work to reassign
+    double min_reassign_ratio = 0.05; // min percentage of work to reassign
     double avg_iter_time; // average time to complete an interation
     uint8_t help_request_status = 0; // 0: not sent 1: sent 2: begin 3: complete
     uint32_t helper_id_; // thread to help me
     uint32_t helpee_id_; // thread that may need my help
-    ThreadsafeQueue<Message>* const sender_queue_;             // not owned
+    ThreadsafeQueue<Message>* const sender_queue_; // not owned
     ThreadsafeQueue<Message> msg_queue_; // received msgs
     ThreadsafeQueue<u_int32_t> high_priority_queue;
     ThreadsafeQueue<u_int32_t> low_priority_queue;
     u_int32_t helpee_cur_sample;
     long lastest_cancel_time = 0;
-    u_int32_t wait_status = 0; //0 : wait to help others 1: has begun helping
+    // -1: haven't asked, 0: no need to help, 1: waiting for helpee's response, 2: need to help but not start, 3: start helping
+    int helping_status = -1;
   };
 }

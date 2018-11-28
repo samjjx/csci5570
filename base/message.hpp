@@ -12,9 +12,9 @@ namespace csci5570 {
 struct Control {};
 
 enum class Flag : char { kExit, kBarrier, kResetWorkerInModel, kClock, kAdd, kGet,
-        kProgressReport, kDoThis, kBegunHelping, kHelpCompleted, kCancelHelp };
+        kProgressReport, kDoThis, kBegunHelping, kHelpCompleted, kCancelHelp, kDontNeedHelp };
 static const char* FlagName[] = {"kExit", "kBarrier", "kResetWorkerInModel", "kClock", "kAdd", "kGet",
-                                 "kProgressReport", "kDothis", "kBegunHelping", "kHelpCompleted", "kCancelHelp"};
+                                 "kProgressReport", "kDothis", "kBegunHelping", "kHelpCompleted", "kCancelHelp", "kDontNeedHelp"};
 
 struct Meta {
   int sender;

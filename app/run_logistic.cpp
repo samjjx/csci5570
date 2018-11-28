@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
 //                                parser, &data_store);
 
   // for test
-  for (int i = 0; i < 10e5; i++) {
+  for (int i = 0; i < 10e2; i++) {
     lib::SVMSample sample;
     sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
     sample.y_ = -1;
@@ -101,6 +101,7 @@ int main(int argc, char** argv) {
   engine.StartEverything();
 
   // 1.1 Create table
+//  const auto kTableId = engine.CreateTable<double>(ModelType::SSP, StorageType::Map, 2);  // table 0
   const auto kTableId = engine.CreateTable<double>(ModelType::BSP, StorageType::Map);  // table 0
 
   // 1.2 Load data
@@ -152,7 +153,10 @@ int main(int argc, char** argv) {
         lr.compute_gradient(next_idx, grad);
         sample_num += 1;
         // simulate straggler
-        if (info.thread_id == 1100) {std::this_thread::sleep_for(std::chrono::milliseconds(10));}
+        if (info.thread_id == 1100) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          LOG(INFO) << next_idx;
+        }
       }
       // average gradient and update to server
       if (sample_num > 0) {
