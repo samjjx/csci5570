@@ -34,7 +34,7 @@ namespace csci5570 {
       : range_(range), helpee_range_(helpee_range), sender_queue_(sender_queue), thread_id_(thread_id), helpee_id_(helpee) {
       assert(range.length > 0);
       iter_num = 0;
-      cur_sample = 0;
+      cur_sample = range_.start;
       stop_idx = range_.end;
       avg_iter_time = std::numeric_limits<double>::infinity();
     };
@@ -43,14 +43,15 @@ namespace csci5570 {
       // update avg_iter_time in sliding window manner
       uint32_t window_size = std::min(uint32_t(100), uint32_t(std::floor(range_.length * check_point_)));
       window_size = std::max(window_size, uint32_t(1));
-      if (cur_sample % window_size == 0) {
+      uint32_t offset = cur_sample - range_.start;
+      if (offset % window_size == 0) {
         std::clock_t now = std::clock();
         if (start > 0) {
           avg_iter_time = ( now - start ) / (double) CLOCKS_PER_SEC * range_.length / window_size;
         }
         start = now;
       }
-      if (helping_status == -1 && cur_sample - range_.start == uint32_t((stop_idx - range_.start) * check_point_)) {
+      if (helping_status == -1 && offset == uint32_t((stop_idx - range_.start) * check_point_)) {
         report_progress();
         std::unique_lock<std::mutex> lk(mu_);
         cond_.wait(lk, [this] {
@@ -60,6 +61,7 @@ namespace csci5570 {
 
       if ( high_priority_queue.Size() != 0 ) {
         helping_status = 3;
+        uint32_t helpee_cur_sample;
         high_priority_queue.WaitAndPop(&helpee_cur_sample);
         if (high_priority_queue.Size() == 0 )
         {
@@ -83,6 +85,7 @@ namespace csci5570 {
       if (cur_sample == stop_idx) {
             //LOG(INFO) << "reach end of my data ";
         if( low_priority_queue.Size() != 0 ) {
+          uint32_t helpee_cur_sample;
           low_priority_queue.WaitAndPop(&helpee_cur_sample);
           if ( helping_status == 2 )
           {
@@ -262,7 +265,7 @@ namespace csci5570 {
           third_party::SArray<long> msg_data(msg.data[0]);
           for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
-            high_priority_queue.Push(i + range_.length);
+            high_priority_queue.Push(i);
           }
           std::lock_guard<std::mutex> lk(mu_);
           helping_status = 2;
@@ -271,11 +274,9 @@ namespace csci5570 {
         else if ( msg_data[0] == iter_num ) {
           LOG(INFO) << "add to low_priority_queue";
           third_party::SArray<long> msg_data(msg.data[0]);
-          u_int32_t sample = msg_data[1] + range_.length;
-          for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
+          for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
-            low_priority_queue.Push(sample);
-            sample++;
+            low_priority_queue.Push(i);
           }
           std::lock_guard<std::mutex> lk(mu_);
           helping_status = 2;
@@ -359,7 +360,6 @@ namespace csci5570 {
     ThreadsafeQueue<Message> msg_queue_; // received msgs
     ThreadsafeQueue<u_int32_t> high_priority_queue;
     ThreadsafeQueue<u_int32_t> low_priority_queue;
-    u_int32_t helpee_cur_sample;
     long lastest_cancel_time = 0;
     // -1: haven't asked, 0: no need to help, 1: waiting for helpee's response, 2: need to help but not start, 3: start helping
     int helping_status = -1;

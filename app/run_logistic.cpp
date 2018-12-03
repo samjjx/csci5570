@@ -78,15 +78,13 @@ int main(int argc, char** argv) {
    * End IO config
    */
 
-
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                                 parser, &data_store, id, nodes.size());
-
   /*
   // for test
-  for (int i = 0; i < 10e2; i++) {
+  for (int i = 0; i < 10e3; i++) {
     lib::SVMSample sample;
     sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
     sample.y_ = -1;
@@ -116,12 +114,12 @@ int main(int argc, char** argv) {
   task.setDataRange(data_store.size(), data_store.size()/2);
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {
-    worker_alloc.push_back({node.id, 1});  // node_id, worker_num
+    worker_alloc.push_back({node.id, 2});  // node_id, worker_num
   }
   task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId, &data_store](const Info& info) {
-    LOG(INFO) << info.DebugString();
+//    LOG(INFO) << info.DebugString();
     uint32_t MAX_EPOCH = 2;
     // the maximum data range used by current worker
     DataRange data_range = info.get_data_range();
@@ -130,7 +128,8 @@ int main(int argc, char** argv) {
     // get all parameters keys of this data range
     std::vector<Key> keys;
     lr.get_keys(keys);
-    LOG(INFO) << "parameter size: " << keys.size();
+
+    LOG(INFO) << "Thread " << info.thread_id << ", data size: " << data_range.length << ", parameter size: " << keys.size();
 
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
@@ -140,7 +139,7 @@ int main(int argc, char** argv) {
       std::vector<double> theta;
       table.Get(keys, &theta);
       lr.update_theta(keys, theta);
-      if(i % 5 == 0) {
+      if(i % 1 == 0) {
         LOG(INFO) << "Current accuracy: " << lr.test_acc();
         LOG(INFO) << "Current loss: " << lr.get_loss();
       }
@@ -155,7 +154,7 @@ int main(int argc, char** argv) {
         // add gradient to each dimension
         lr.compute_gradient(next_idx, grad);
         sample_num += 1;
-        //  LOG(INFO) << next_idx;
+        if (sample_num % 1000 == 0) {LOG(INFO) << "Thread " << info.thread_id << ", progress: " << float(sample_num) / data_range.length;}
         // simulate straggler
         if (info.thread_id == 1100) {
           //std::this_thread::sleep_for(std::chrono::milliseconds(10));

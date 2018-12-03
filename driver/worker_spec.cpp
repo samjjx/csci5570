@@ -13,6 +13,7 @@ bool WorkerSpec::HasLocalWorkers(uint32_t node_id) const {
 }
 
 const std::vector<uint32_t>& WorkerSpec::GetLocalWorkers(uint32_t node_id) const {
+  LOG(INFO) << node_to_workers_.find(node_id)->second.size();
   return node_to_workers_.find(node_id)->second;
 }
 
