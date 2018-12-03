@@ -50,7 +50,7 @@ namespace csci5570 {
         }
         start = now;
       }
-      if (helping_status == -1 && cur_sample - range_.start == uint32_t(range_.length * check_point_)) {
+      if (helping_status == -1 && cur_sample - range_.start == uint32_t((stop_idx - range_.start) * check_point_)) {
         report_progress();
         std::unique_lock<std::mutex> lk(mu_);
         cond_.wait(lk, [this] {
@@ -270,7 +270,6 @@ namespace csci5570 {
         }
         else if ( msg_data[0] == iter_num ) {
           LOG(INFO) << "add to low_priority_queue";
-          //置入低优先级队列
           third_party::SArray<long> msg_data(msg.data[0]);
           u_int32_t sample = msg_data[1] + range_.length;
           for ( int i = 0; i < msg_data[2] - msg_data[1]; i++ )
