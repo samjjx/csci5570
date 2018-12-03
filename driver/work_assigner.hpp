@@ -124,7 +124,10 @@ namespace csci5570 {
           return cur_sample++;
         } else if (help_request_status == 2) {
           // has begun helping, wait for helper
-          while(help_request_status == 2) {}
+          std::unique_lock<std::mutex> lk(mu_);
+          cond_.wait(lk, [this] {
+            return help_request_status != 2;
+          });
           help_request_status = 0;
           helping_status = -1;
           stop_idx = range_.end;
