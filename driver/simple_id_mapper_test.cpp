@@ -50,12 +50,12 @@ TEST_F(TestSimpleIdMapper, AllocateDeallocateThread) {
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 0);
   id_mapper.Init(1);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 0);
-  EXPECT_EQ(id_mapper.AllocateWorkerThread(1),
+  EXPECT_EQ(id_mapper.AllocateWorkerThread(1, true),
             SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kMaxBgThreadsPerNode);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 1);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1)[0],
             SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kMaxBgThreadsPerNode);
-  EXPECT_EQ(id_mapper.AllocateWorkerThread(1),
+  EXPECT_EQ(id_mapper.AllocateWorkerThread(1, true),
             SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kMaxBgThreadsPerNode + 1);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 2);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1)[0],

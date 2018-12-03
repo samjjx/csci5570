@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "base/magic.hpp"
 #include "base/message.hpp"
 #include "base/threadsafe_queue.hpp"
