@@ -52,7 +52,10 @@ namespace csci5570 {
       }
       if (helping_status == -1 && cur_sample - range_.start == uint32_t(range_.length * check_point_)) {
         report_progress();
-        while(helping_status == 1) {}; // wait for report_progress response
+        std::unique_lock<std::mutex> lk(mu_);
+        cond_.wait(lk, [this] {
+          return helping_status != 1;
+        }); // wait for report_progress response
       }
 
       if ( high_priority_queue.Size() != 0 ) {
@@ -307,7 +310,9 @@ namespace csci5570 {
       }
       if (msg.meta.flag == Flag::kDontNeedHelp) {
         // helpee don't need help
+        std::lock_guard<std::mutex> lk(mu_);
         helping_status = 0;
+        cond_.notify_all();
       }
       if (msg.meta.flag == Flag::kDoThis) {
         third_party::SArray<long> msg_data(msg.data[0]);
@@ -326,6 +331,8 @@ namespace csci5570 {
       }
     }
   private:
+    std::mutex mu_;
+    std::condition_variable cond_;
     DataRange range_; // data range of mine
     DataRange helpee_range_; // data range of helpee
     uint32_t iter_num;
