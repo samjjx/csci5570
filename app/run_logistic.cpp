@@ -9,17 +9,17 @@
 #include "glog/logging.h"
 
 #include "driver/engine.hpp"
-//#include "lib/abstract_data_loader.hpp"
-//#include "lib/labeled_sample.hpp"
-//#include "lib/parser.hpp"
+#include "lib/abstract_data_loader.hpp"
+#include "lib/labeled_sample.hpp"
+#include "lib/parser.hpp"
 #include "app/logitstic_regression.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/irange.hpp>
 #include <fstream>
-//#include <lib/svm_loader.hpp>
-#include "lib/svm_sample.hpp"
+#include <lib/svm_loader.hpp>
+//#include "lib/svm_sample.hpp"
 
 using namespace csci5570;
 
@@ -78,11 +78,12 @@ int main(int argc, char** argv) {
    */
 
 
-//  lib::Parser<lib::SVMSample, DataStore> parser;
-//  lib::DataLoader<lib::SVMSample, DataStore> data_loader;
-//  data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-//                                parser, &data_store);
+  lib::Parser<lib::SVMSample, DataStore> parser;
+  lib::DataLoader<lib::SVMSample, DataStore> data_loader;
+  data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
+                                parser, &data_store);
 
+  /*
   // for test
   for (int i = 0; i < 10e2; i++) {
     lib::SVMSample sample;
@@ -94,6 +95,7 @@ int main(int argc, char** argv) {
     sample1.y_ = 1;
     data_store.push_back(sample1);
   }
+   */
 
   Engine engine(*node, nodes);
 
@@ -119,7 +121,7 @@ int main(int argc, char** argv) {
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId, &data_store](const Info& info) {
     LOG(INFO) << info.DebugString();
-    uint32_t MAX_EPOCH = 10e2;
+    uint32_t MAX_EPOCH = 2;
     // the maximum data range used by current worker
     DataRange data_range = info.get_data_range();
     // algorithm helper
@@ -155,7 +157,7 @@ int main(int argc, char** argv) {
         // simulate straggler
         if (info.thread_id == 1100) {
           std::this_thread::sleep_for(std::chrono::milliseconds(10));
-          LOG(INFO) << next_idx;
+          // LOG(INFO) << next_idx;
         }
       }
       // average gradient and update to server
@@ -167,10 +169,11 @@ int main(int argc, char** argv) {
       }
       table.Clock();
     }
-    LOG(INFO) << "Task completed.";
   });
-
+  auto start_time = std::chrono::system_clock::now();
   engine.Run(task);
+  auto end_time = std::chrono::system_clock::now();
+  LOG(INFO) << "Task completed in " << std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
 
   // 3. Stop
   engine.StopEverything();
