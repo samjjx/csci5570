@@ -27,7 +27,8 @@ print "hostfile_path:%s, prog_path:%s" % (hostfile_path, prog_path)
 
 params = {
     "config_file":hostfile_path,
-    "input": "hdfs:///datasets/classification/a9"
+    # "input": "hdfs:///datasets/classification/a9"
+    "input": "hdfs:///datasets/classification/kdd12-5blocks"
 }
 
 ssh_cmd = (

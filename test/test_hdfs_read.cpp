@@ -20,7 +20,7 @@ void HDFS_Read() {
 
   // 1. Spawn the HDFS block assigner thread on the master
   std::thread master_thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode] {
-    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port);
+    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port, 2);
     hdfs_block_assigner.Serve();
   });
 

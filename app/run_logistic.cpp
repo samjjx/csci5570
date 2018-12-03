@@ -68,8 +68,9 @@ int main(int argc, char** argv) {
 //  std::string url = "hdfs:///datasets/classification/a9";
   std::string url = FLAGS_input;
   std::string hdfs_namenode = "proj10";                        // Do not change
-  std::string master_host = node->hostname;  // Set to worker name
+  std::string master_host = "proj10";  // Set to worker name
   std::string worker_host = node->hostname;  // Set to worker name
+  uint32_t id = node->id;
   int hdfs_namenode_port = 9000;
   int master_port = 19817;  // use a random port number to avoid collision with other users
   const uint32_t n_features = 100;
@@ -81,7 +82,7 @@ int main(int argc, char** argv) {
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                                parser, &data_store);
+                                parser, &data_store, id, nodes.size());
 
   /*
   // for test
