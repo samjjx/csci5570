@@ -81,6 +81,7 @@ namespace csci5570 {
 
       // reach the end of my data
       if (cur_sample == stop_idx) {
+            //LOG(INFO) << "reach end of my data ";
         if( low_priority_queue.Size() != 0 ) {
           low_priority_queue.WaitAndPop(&helpee_cur_sample);
           if ( helping_status == 2 )
@@ -128,6 +129,7 @@ namespace csci5570 {
           cond_.wait(lk, [this] {
             return help_request_status != 2;
           });
+          LOG(INFO) << "helper complete help";
           help_request_status = 0;
           helping_status = -1;
           stop_idx = range_.end;
@@ -257,13 +259,14 @@ namespace csci5570 {
           m.AddData(data);
           sender_queue_->Push(m);
           LOG(INFO) << "add to high_priority_queue";
-          // 置入优先队列
           third_party::SArray<long> msg_data(msg.data[0]);
           for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
             high_priority_queue.Push(i + range_.length);
           }
+          std::lock_guard<std::mutex> lk(mu_);
           helping_status = 2;
+          cond_.notify_all();
         }
         else if ( msg_data[0] == iter_num ) {
           LOG(INFO) << "add to low_priority_queue";
@@ -275,7 +278,9 @@ namespace csci5570 {
             low_priority_queue.Push(sample);
             sample++;
           }
+          std::lock_guard<std::mutex> lk(mu_);
           helping_status = 2;
+          cond_.notify_all();
         }
       }
     }
@@ -326,7 +331,9 @@ namespace csci5570 {
         help_request_status = 2;
       }
       if (msg.meta.flag == Flag::kHelpCompleted) {
+        std::lock_guard<std::mutex> lk(mu_);
         help_request_status = 3;
+        cond_.notify_all();
       }
       if (msg.meta.flag == Flag::kCancelHelp){
           third_party::SArray<long> msg_data(msg.data[0]);

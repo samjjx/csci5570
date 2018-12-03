@@ -155,10 +155,10 @@ int main(int argc, char** argv) {
         // add gradient to each dimension
         lr.compute_gradient(next_idx, grad);
         sample_num += 1;
+        //  LOG(INFO) << next_idx;
         // simulate straggler
         if (info.thread_id == 1100) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
-          // LOG(INFO) << next_idx;
+          //std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
       }
       // average gradient and update to server
