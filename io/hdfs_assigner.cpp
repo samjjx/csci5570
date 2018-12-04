@@ -56,7 +56,8 @@ void HDFSBlockAssigner::handle_exit() {
   zmq_recv_common(master_socket_.get(), &msg);
   stream.push_back_bytes(reinterpret_cast<char*>(msg.data()), msg.size());
   stream >> worker_name >> worker_id;
-  finished_workers_.insert(worker_id);
+  LOG(INFO) << worker_name;
+  finished_workers_.insert(worker_name);
 
   LOG(INFO) << "master => worker finished @" << worker_name << "-" << std::to_string(worker_id);
 
