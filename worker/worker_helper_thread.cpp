@@ -29,6 +29,10 @@ void WorkerHelperThread::RegisterWorkAssigner(WorkAssigner* work_assigner) {
   work_assigner_ = work_assigner;
 }
 
+void WorkerHelperThread::DetachWorkAssigner() {
+  work_assigner_ = nullptr;
+}
+
 void WorkerHelperThread::OnReceive(csci5570::Message &msg) {}
 
 }

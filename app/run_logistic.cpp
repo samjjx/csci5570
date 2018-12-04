@@ -82,9 +82,10 @@ int main(int argc, char** argv) {
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                                 parser, &data_store, id, nodes.size());
+
   /*
   // for test
-  for (int i = 0; i < 10e3; i++) {
+  for (int i = 0; i < 10e4; i++) {
     lib::SVMSample sample;
     sample.x_ = std::vector<std::pair<int, int>>({{0, 2}, {3, 1}});
     sample.y_ = -1;
@@ -144,7 +145,8 @@ int main(int argc, char** argv) {
         LOG(INFO) << "Current loss: " << lr.get_loss();
       }
 
-      std::vector<double> grad(keys.size(), 0.0);
+//      std::vector<double> grad(keys.size(), 0.0);
+      std::unordered_map<Key, double> grad;
 
       // get one training data
       uint32_t sample_num = 0;
@@ -162,10 +164,14 @@ int main(int argc, char** argv) {
       }
       // average gradient and update to server
       if (sample_num > 0) {
-        for (auto j = 0; j < grad.size(); j++) {
-          grad[j] /= sample_num;
+        std::vector<double> grad_vec;
+        for (Key k :keys) {
+          auto it = grad.find(k);
+          if (it != grad.end()) {
+            grad_vec.push_back(it->second/sample_num);
+          } else {grad_vec.push_back(0.0);}
         }
-        table.Add(keys, grad);
+        table.Add(keys, grad_vec);
       }
       table.Clock();
     }

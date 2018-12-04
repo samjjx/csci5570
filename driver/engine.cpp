@@ -184,7 +184,6 @@ void Engine::Run(const MLTask& task) {
 
   // same worker number in each node
   uint32_t step = std::ceil(node_data_range.length / worker_ids.size());
-  uint32_t helpee_step = std::ceil(helpee_data_range.length / worker_ids.size());
   uint32_t helpee_start = helpee_data_range.start;
   for(uint32_t i = 0; i < worker_ids.size(); i++) {
     uint32_t thread_id = thread_ids[i];
@@ -192,14 +191,11 @@ void Engine::Run(const MLTask& task) {
     uint32_t helpee_id = helpee_ids[i];
 
     DataRange data_range(i*step, std::min((i+1)*step, node_data_range.length));
-    DataRange helpee_range(
-            i*helpee_step+helpee_start,
-            std::min((i+1)*helpee_step+helpee_start, helpee_start+helpee_data_range.length));
 
     std::thread thread(
-      [thread_id, worker_id, helpee_id, &task, data_range, helpee_range, this]() {
+      [thread_id, worker_id, helpee_id, &task, data_range, helpee_start, this]() {
 
-        WorkAssigner work_assigner(data_range, helpee_range, sender_->GetMessageQueue(), thread_id, helpee_id);
+        WorkAssigner work_assigner(data_range, helpee_start, sender_->GetMessageQueue(), thread_id, helpee_id);
         WorkerHelperThread* helper_thread = GetHelperOfWorker(thread_id);
         helper_thread->RegisterWorkAssigner(&work_assigner);
         LOG(INFO) << "Helper: " << thread_id << " <-> Helpee: " << helpee_id;
@@ -216,6 +212,7 @@ void Engine::Run(const MLTask& task) {
         task.RunLambda(info);
         // free worker thread id
         id_mapper_->DeallocateWorkerThread(node_.id, thread_id);
+        helper_thread->DetachWorkAssigner();
       });
     threads.push_back(std::move(thread));
   }

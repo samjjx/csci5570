@@ -30,8 +30,8 @@ namespace csci5570 {
   class WorkAssigner {
   public:
     WorkAssigner() = delete;
-    WorkAssigner(DataRange range, DataRange helpee_range, ThreadsafeQueue<Message>* const sender_queue, uint32_t thread_id, uint32_t helpee)
-      : range_(range), helpee_range_(helpee_range), sender_queue_(sender_queue), thread_id_(thread_id), helpee_id_(helpee) {
+    WorkAssigner(DataRange range, uint32_t helpee_start, ThreadsafeQueue<Message>* const sender_queue, uint32_t thread_id, uint32_t helpee)
+      : range_(range), helpee_base_(helpee_start), sender_queue_(sender_queue), thread_id_(thread_id), helpee_id_(helpee) {
       assert(range.length > 0);
       iter_num = 0;
       cur_sample = range_.start;
@@ -172,6 +172,7 @@ namespace csci5570 {
       data.push_back(timestamp);
       m.AddData(data);
       sender_queue_->Push(m);
+      std::lock_guard<std::mutex> lk(mu_);
       helping_status = 1;
     }
 
@@ -265,7 +266,7 @@ namespace csci5570 {
           third_party::SArray<long> msg_data(msg.data[0]);
           for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
-            high_priority_queue.Push(i);
+            high_priority_queue.Push(i+helpee_base_);
           }
           std::lock_guard<std::mutex> lk(mu_);
           helping_status = 2;
@@ -276,7 +277,7 @@ namespace csci5570 {
           third_party::SArray<long> msg_data(msg.data[0]);
           for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
-            low_priority_queue.Push(i);
+            low_priority_queue.Push(i+helpee_base_);
           }
           std::lock_guard<std::mutex> lk(mu_);
           helping_status = 2;
@@ -336,15 +337,15 @@ namespace csci5570 {
         cond_.notify_all();
       }
       if (msg.meta.flag == Flag::kCancelHelp){
-          third_party::SArray<long> msg_data(msg.data[0]);
-          lastest_cancel_time = msg_data[0];
+        third_party::SArray<long> msg_data(msg.data[0]);
+        lastest_cancel_time = msg_data[0];
       }
     }
   private:
     std::mutex mu_;
     std::condition_variable cond_;
     DataRange range_; // data range of mine
-    DataRange helpee_range_; // data range of helpee
+    uint32_t helpee_base_; // data start of helpee
     uint32_t iter_num;
     uint32_t cur_sample;
     uint32_t thread_id_;

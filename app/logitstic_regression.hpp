@@ -54,11 +54,11 @@ public:
    * @param row
    * @param grad
    */
-  void compute_gradient(uint32_t i, std::vector<T>& grad) {
+  void compute_gradient(uint32_t i, std::unordered_map<Key, T>& grad) {
     const lib::SVMSample& row = data_store_->at(i);
-    for(auto& g : grad_) {
-      g.second = 0.0;
-    }
+//    for(auto& g : grad_) {
+//      g.second = 0.0;
+//    }
     // NOTICE that row.y_ maybe +1/-1
     auto y = row.y_ <= 0 ? 0 : 1;
     auto z = 0;
@@ -71,11 +71,12 @@ public:
     for(auto& col : row.x_) {
       Key key = col.first;
       auto x = col.second;
-      grad_[key] += -learning_rate_ * x * (g - y);
-    }
-    uint32_t j = 0;
-    for(auto& g : grad_) {
-      grad[j++] += g.second;
+      T grad_in_dim = -learning_rate_ * x * (g - y);
+      if (grad.find(key) != grad.end()) {
+        grad[key] += grad_in_dim;
+      } else {
+        grad[key] = grad_in_dim;
+      }
     }
   }
 
