@@ -45,7 +45,7 @@ class HDFSBlockAssigner {
   std::unique_ptr<zmq::socket_t> master_socket_;
 
   hdfsFS fs_ = NULL;
-  std::set<int> finished_workers_;
+  std::set<std::string> finished_workers_;
   int num_workers_alive_ = 0;
   int total_nodes_;
   std::map<std::string, int> finish_dict;

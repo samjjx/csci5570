@@ -58,7 +58,7 @@ namespace csci5570 {
 
               std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore,n_features, id] {
                   int num_threads = 1;
-                  int second_id = id;
+                  int second_id = 1;
 
                   LOG(INFO) << "Line input start to prepare";
                   LineInputFormat infmt(url, num_threads, second_id, &coordinator, worker_host, hdfs_namenode,
