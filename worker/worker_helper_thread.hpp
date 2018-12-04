@@ -12,6 +12,7 @@ class WorkerHelperThread : public AbstractWorkerThread {
     : AbstractWorkerThread(worker_id), callback_runner_(callback_runner) {}
 
     void RegisterWorkAssigner(WorkAssigner* work_assigner);
+    void DetachWorkAssigner();
 
  protected:
   void Main() override;
