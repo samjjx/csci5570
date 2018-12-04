@@ -112,9 +112,10 @@ int main(int argc, char** argv) {
   MLTask task;
   // TODO
   task.setDataRange(data_store.size(), data_store.size()/2);
+  LOG(INFO) << "data size for node: " << data_store.size();
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {
-    worker_alloc.push_back({node.id, 2});  // node_id, worker_num
+    worker_alloc.push_back({node.id, 20});  // node_id, worker_num
   }
   task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});     // Use table 0
@@ -130,6 +131,7 @@ int main(int argc, char** argv) {
     lr.get_keys(keys);
 
     LOG(INFO) << "Thread " << info.thread_id << ", data size: " << data_range.length << ", parameter size: " << keys.size();
+    while(true){}
 
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
@@ -149,10 +151,13 @@ int main(int argc, char** argv) {
       // get one training data
       uint32_t sample_num = 0;
       while(true) {
+        auto start_time = std::chrono::system_clock::now();
         int next_idx = info.next_sample();
         if (next_idx == -1) {break;}
         // add gradient to each dimension
         lr.compute_gradient(next_idx, grad);
+        auto end_time = std::chrono::system_clock::now();
+        //LOG(INFO) << "One sample takes " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         sample_num += 1;
         if (sample_num % 1000 == 0) {LOG(INFO) << "Thread " << info.thread_id << ", progress: " << float(sample_num) / data_range.length;}
         // simulate straggler
