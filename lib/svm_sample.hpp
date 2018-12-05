@@ -10,7 +10,7 @@
 namespace csci5570 {
     namespace lib {
 
-class SVMSample : public LabeledSample<std::vector<std::pair<int, int>>, int> {
+class SVMSample : public LabeledSample<std::vector<std::pair<int, float>>, int> {
 public:
     std::string toString() {
 

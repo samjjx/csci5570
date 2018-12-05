@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
   // 2. Start training task
   MLTask task;
   // TODO
-  task.setDataRange(data_store.size(), data_store.size()/2);
+  task.setDataRange(data_store.size(), data_store.size());
   LOG(INFO) << "data size for node: " << data_store.size();
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {
@@ -126,13 +126,12 @@ int main(int argc, char** argv) {
     // the maximum data range used by current worker
     DataRange data_range = info.get_data_range();
     // algorithm helper
-    LogisticRegression<double> lr(&data_store, data_range, 0.00001);
+    LogisticRegression<double> lr(&data_store, data_range, 1);
     // get all parameters keys of this data range
     std::vector<Key> keys;
     lr.get_keys(keys);
 
     LOG(INFO) << "Thread " << info.thread_id << ", data size: " << data_range.length << ", parameter size: " << keys.size();
-    while(true){}
 
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
@@ -142,7 +141,7 @@ int main(int argc, char** argv) {
       std::vector<double> theta;
       table.Get(keys, &theta);
       lr.update_theta(keys, theta);
-      if(i % 1 == 0) {
+      if(info.thread_id == 100) {
         LOG(INFO) << "Current accuracy: " << lr.test_acc();
         LOG(INFO) << "Current loss: " << lr.get_loss();
       }
@@ -161,7 +160,7 @@ int main(int argc, char** argv) {
         auto end_time = std::chrono::system_clock::now();
         //LOG(INFO) << "One sample takes " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         sample_num += 1;
-        if (sample_num % 1000 == 0) {LOG(INFO) << "Thread " << info.thread_id << ", progress: " << float(sample_num) / data_range.length;}
+        if (info.thread_id == 1100 && sample_num % 10000 == 0) {LOG(INFO) << "Thread " << info.thread_id << ", progress: " << float(sample_num) / data_range.length;}
         // simulate straggler
         if (info.thread_id == 1100) {
           //std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -174,6 +173,7 @@ int main(int argc, char** argv) {
           auto it = grad.find(k);
           if (it != grad.end()) {
             grad_vec.push_back(it->second/sample_num);
+            //grad_vec.push_back(it->second);
           } else {grad_vec.push_back(0.0);}
         }
         table.Add(keys, grad_vec);

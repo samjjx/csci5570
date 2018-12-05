@@ -51,6 +51,8 @@ namespace csci5570 {
         }
         start = now;
       }
+      // uncomment this to allow helping
+      /*
       if (helping_status == -1 && offset == uint32_t((stop_idx - range_.start) * check_point_)) {
         report_progress();
         std::unique_lock<std::mutex> lk(mu_);
@@ -58,7 +60,7 @@ namespace csci5570 {
           return helping_status != 1;
         }); // wait for report_progress response
       }
-
+      */
       if ( high_priority_queue.Size() != 0 ) {
         helping_status = 3;
         uint32_t helpee_cur_sample;
