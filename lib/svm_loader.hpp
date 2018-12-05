@@ -27,7 +27,7 @@ namespace csci5570 {
         public:
             template <typename Parse>  // e.g. std::function<Sample(boost::string_ref, int)>
             static void load(std::string url, std::string hdfs_namenode, std::string master_host, std::string worker_host,
-                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, uint32_t id, int total_nodes) {
+                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, DataStore* datastore_backup, uint32_t id, int total_nodes, uint32_t hid) {
               // 1. Connect to the data source, e.g. HDFS, via the modules in io
               // 2. Extract and parse lines
               // 3. Put samples into datastore

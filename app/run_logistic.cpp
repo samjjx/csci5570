@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
   FLAGS_colorlogtostderr = true;
   using DataStore = std::vector<lib::SVMSample>;
   DataStore data_store;
+  DataStore data_store_backup;
 
   LOG(INFO) << FLAGS_config_file;
   LOG(INFO) << FLAGS_my_id;
@@ -61,6 +62,9 @@ int main(int argc, char** argv) {
     LOG(INFO) << "My_id not in nodes list.";
     return -1;
   }
+
+  Engine engine(*node, nodes);
+  uint32_t h_id = engine.GetHelpeeNode();
 
   /*
    * Begin IO config
@@ -81,7 +85,8 @@ int main(int argc, char** argv) {
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                                parser, &data_store, id, nodes.size());
+                                parser, &data_store, &data_store_backup, id, nodes.size(), h_id);
+
   /*
   // for test
   for (int i = 0; i < 10e3; i++) {
@@ -95,8 +100,6 @@ int main(int argc, char** argv) {
     data_store.push_back(sample1);
   }
    */
-
-  Engine engine(*node, nodes);
 
   // 1. Start system
   engine.StartEverything();
