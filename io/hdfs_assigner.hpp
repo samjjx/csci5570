@@ -33,8 +33,10 @@ class HDFSBlockAssigner {
 
  private:
   void halt();
+  void reset();
   void handle_exit();
   void handle_block_request(const std::string& cur_client);
+  void handle_block_backup_request(const std::string& cur_client);
   void init_socket(int master_port, zmq::context_t* zmq_context);
   void init_hdfs(const std::string& node, const int& port);
   void browse_hdfs(int id, const std::string& url);
@@ -49,6 +51,9 @@ class HDFSBlockAssigner {
   int num_workers_alive_ = 0;
   int total_nodes_;
   std::map<std::string, int> finish_dict;
+
+
+  std::map<std::string, std::set<std::pair<std::string, size_t>>> answers_;
 
   // {task_id: {{url: {host:[{filename,offset,block_location}, {filename,offset,block_location}...]}},....}},...
   std::map<size_t, std::map<std::string, std::map<std::string, std::unordered_set<BlkDesc>>>>

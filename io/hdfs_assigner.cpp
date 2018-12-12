@@ -39,9 +39,33 @@ void HDFSBlockAssigner::Serve() {
     }
   }
   LOG(INFO) << "HDFSBlockAssigner stops";
+  LOG(INFO) << "HDFSBlockAssigner starts to load backup data";
+  reset();
+  LOG(INFO) << "HDFSBlockAssigner stop to load backup data";
 }
 
 // =================== Private functions ===================
+
+
+void HDFSBlockAssigner::reset() {
+  running_ = true;
+  finished_workers_.clear();
+  while (running_) {
+    zmq::message_t msg1, msg2, msg3;
+    zmq_recv_common(master_socket_.get(), &msg1);
+    std::string cur_client = std::string(reinterpret_cast<char*>(msg1.data()), msg1.size());
+    zmq_recv_common(master_socket_.get(), &msg2);
+    zmq_recv_common(master_socket_.get(), &msg3);
+    int msg_int = *reinterpret_cast<int32_t*>(msg3.data());
+    if (msg_int == kBlockRequest) {
+      handle_block_backup_request(cur_client);
+    } else if (msg_int == kExit) {
+      handle_exit();
+    } else {
+      CHECK(false) << "Unknown message: " << msg_int;
+    }
+  }
+}
 
 void HDFSBlockAssigner::halt() { running_ = false; }
 
@@ -80,6 +104,9 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
   num_workers_alive_ += num_threads;
   LOG(INFO) << url << " " << host << " " << num_threads << " " << id << " " << load_type;
   std::pair<std::string, size_t> ret = answer(host, url, id);
+
+  answers_[host].insert(ret);
+
   stream.clear();
   stream << ret.first << ret.second;
 
@@ -87,6 +114,36 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
   zmq_send_common(master_socket_.get(), nullptr, 0, ZMQ_SNDMORE);
   zmq_send_common(master_socket_.get(), stream.get_remained_buffer(), stream.size());
 }
+
+    void HDFSBlockAssigner::handle_block_backup_request(const std::string& cur_client) {
+      std::string url, host, load_type;
+      int num_threads, id;
+
+      zmq::message_t msg1;
+      zmq_recv_common(master_socket_.get(), &msg1);
+      BinStream stream;
+      stream.push_back_bytes(reinterpret_cast<char*>(msg1.data()), msg1.size());
+      stream >> url >> host >> num_threads >> id;
+
+      // reset num_worker_alive
+      num_workers_alive_ += num_threads;
+      LOG(INFO) << url << " " << host << " " << num_threads << " " << id << " " << load_type;
+
+
+      /**
+       * TODO: Iterator the answers
+       */
+
+      std::pair<std::string, size_t> ret;
+
+      stream.clear();
+      stream << ret.first << ret.second;
+
+      zmq_send_common(master_socket_.get(), cur_client.data(), cur_client.length(), ZMQ_SNDMORE);
+      zmq_send_common(master_socket_.get(), nullptr, 0, ZMQ_SNDMORE);
+      zmq_send_common(master_socket_.get(), stream.get_remained_buffer(), stream.size());
+    }
+
 
 void HDFSBlockAssigner::init_socket(int master_port, zmq::context_t* zmq_context) {
   master_socket_.reset(new zmq::socket_t(*zmq_context, ZMQ_ROUTER));
