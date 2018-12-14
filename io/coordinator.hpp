@@ -40,10 +40,10 @@ class Coordinator {
    * @param master_port  HDFS master port number
    *
    */
-  Coordinator(int proc_id, std::string hostname, zmq::context_t* context, std::string master_host, int master_port);
+  Coordinator(int proc_id, std::string hostname, zmq::context_t* context, std::string master_host, int master_port, std::string help_host);
 
   ~Coordinator();
-
+  std::string help_host_;
   /**
    * Build tcp connection with master
    */

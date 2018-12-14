@@ -48,8 +48,15 @@ void HDFSBlockAssigner::Serve() {
 
 
 void HDFSBlockAssigner::reset() {
+  LOG(INFO) << "HDFSBlockAssigner starts to backup";
   running_ = true;
   finished_workers_.clear();
+  for(auto ans: answers_){
+    auto key = ans.first;
+    auto value = ans.second;
+    answers_iterator_[key] = value.begin();
+  }
+
   while (running_) {
     zmq::message_t msg1, msg2, msg3;
     zmq_recv_common(master_socket_.get(), &msg1);
@@ -65,6 +72,7 @@ void HDFSBlockAssigner::reset() {
       CHECK(false) << "Unknown message: " << msg_int;
     }
   }
+  LOG(INFO) << "HDFSBlockAssigner stop to backup";
 }
 
 void HDFSBlockAssigner::halt() { running_ = false; }
@@ -91,14 +99,16 @@ void HDFSBlockAssigner::handle_exit() {
 }
 
 void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
-  std::string url, host, load_type;
+  std::string url, host, load_type, help_host;
   int num_threads, id;
 
   zmq::message_t msg1;
   zmq_recv_common(master_socket_.get(), &msg1);
   BinStream stream;
   stream.push_back_bytes(reinterpret_cast<char*>(msg1.data()), msg1.size());
-  stream >> url >> host >> num_threads >> id;
+  stream >> url >> host >> num_threads >> id >> help_host;
+
+  help_host_[host] = help_host;
 
   // reset num_worker_alive
   num_workers_alive_ += num_threads;
@@ -134,7 +144,7 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
        * TODO: Iterator the answers
        */
 
-      std::pair<std::string, size_t> ret;
+      std::pair<std::string, size_t> ret = *answers_iterator_[help_host_[host]];
 
       stream.clear();
       stream << ret.first << ret.second;

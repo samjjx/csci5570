@@ -30,7 +30,7 @@ void HDFS_Read() {
   std::string worker_host = "proj10";  // change to the node you are actually using
 
   // 3. One coordinator for one process
-  Coordinator coordinator(proc_id, worker_host, &zmq_context, master_host, master_port);
+  Coordinator coordinator(proc_id, worker_host, &zmq_context, master_host, master_port, worker_host);
   coordinator.serve();
   LOG(INFO) << "Coordinator begins serving";
 

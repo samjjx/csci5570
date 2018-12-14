@@ -22,8 +22,8 @@
 namespace csci5570 {
 
 Coordinator::Coordinator(int proc_id, std::string hostname, zmq::context_t* context, std::string master_host,
-                         int master_port)
-    : proc_id_(proc_id), hostname_(hostname), context_(context), master_host_(master_host), master_port_(master_port) {}
+                         int master_port, std::string help_host)
+    : proc_id_(proc_id), hostname_(hostname), context_(context), master_host_(master_host), master_port_(master_port), help_host_(help_host) {}
 
 Coordinator::~Coordinator() {
   delete zmq_coord_;

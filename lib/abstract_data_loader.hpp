@@ -45,7 +45,7 @@ class AbstractDataLoader {
     std::string master_host = "proj10";  // change to the node you are actually using
     std::string worker_host = "proj10";  // change to the node you are actually using
 
-    Coordinator coordinator(proc_id, worker_host, &zmq_context, master_host, master_port);
+    Coordinator coordinator(proc_id, worker_host, &zmq_context, master_host, master_port, worker_host);
     coordinator.serve();
     int num_threads = 1;
     int second_id = 0;

@@ -37,7 +37,7 @@ boost::string_ref HDFSFileSplitter::fetch_block(bool is_next) {
   } else {
     // ask master for a new block
     BinStream question;
-    question << url_ << hostname_ << num_threads_ << id_;
+    question << url_ << hostname_ << num_threads_ << id_ << coordinator_->help_host_;
     // 301 is constant for kBlockRequest
     BinStream answer = coordinator_->ask_master(question, 301);
     std::string fn;

@@ -27,7 +27,7 @@ namespace csci5570 {
         public:
             template <typename Parse>  // e.g. std::function<Sample(boost::string_ref, int)>
             static void load(std::string url, std::string hdfs_namenode, std::string master_host, std::string worker_host,
-                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, DataStore* datastore_backup, uint32_t id, int total_nodes, uint32_t hid) {
+                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, DataStore* datastore_backup, uint32_t id, int total_nodes, std::string help_host) {
               // 1. Connect to the data source, e.g. HDFS, via the modules in io
               // 2. Extract and parse lines
               // 3. Put samples into datastore
@@ -45,7 +45,7 @@ namespace csci5570 {
               // 2. Prepare meta info for the master and workers
               int proc_id = getpid();  // the actual process id, or you can assign a virtual one, as long as it is distinct
 
-              Coordinator coordinator(proc_id, worker_host, &zmq_context, master_host, master_port);
+              Coordinator coordinator(proc_id, worker_host, &zmq_context, master_host, master_port, help_host);
               coordinator.serve();
               LOG(INFO) << "Coordinator begins serving";
 
@@ -56,7 +56,7 @@ namespace csci5570 {
                 });
               }
 
-              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore,n_features, id] {
+              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore, &datastore_backup, n_features, id] {
                   int num_threads = 1;
                   int second_id = 1;
 
@@ -66,7 +66,7 @@ namespace csci5570 {
                   LOG(INFO) << "Line input is well prepared";
 
                   boost::string_ref record;
-                  bool success = true;
+                  bool success;
                   int count = 0;
                   while (true) {
                     success = infmt.next(record);
@@ -83,6 +83,26 @@ namespace csci5570 {
                   BinStream finish_signal;
                   finish_signal << worker_host << second_id;
                   coordinator.notify_master(finish_signal, 300);
+
+                  /**
+                   * Following is for loading the backup data
+                   */
+                  LOG(INFO) << "Line input start to prepare";
+                  infmt = LineInputFormat(url, num_threads, second_id, &coordinator, worker_host, hdfs_namenode,
+                                        hdfs_namenode_port);
+                  LOG(INFO) << "Line input is well prepared";
+
+                  while (true) {
+                    success = infmt.next(record);
+                    if (success == false)
+                      break;
+                    // LOG(INFO) << record.to_string();
+                    Sample s = parse.parse_libsvm(record, n_features);
+                    datastore_backup->push_back(s);
+                  }
+                  finish_signal << worker_host << second_id;
+                  coordinator.notify_master(finish_signal, 300);
+
               });
               if(worker_host == master_host)
                 master_thread.join();

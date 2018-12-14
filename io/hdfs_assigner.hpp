@@ -52,8 +52,12 @@ class HDFSBlockAssigner {
   int total_nodes_;
   std::map<std::string, int> finish_dict;
 
+  std::map<std::string, std::string> help_host_; // key: helper value:helpee
+
 
   std::map<std::string, std::set<std::pair<std::string, size_t>>> answers_;
+
+  std::map<std::string, std::set<std::pair<std::string, size_t>>::iterator> answers_iterator_;
 
   // {task_id: {{url: {host:[{filename,offset,block_location}, {filename,offset,block_location}...]}},....}},...
   std::map<size_t, std::map<std::string, std::map<std::string, std::unordered_set<BlkDesc>>>>
