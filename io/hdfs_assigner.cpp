@@ -145,7 +145,7 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
        */
 
       std::pair<std::string, size_t> ret = *answers_iterator_[help_host_[host]];
-
+      LOG(INFO) << "Ret request：" << ret.first << "\t" << ret.second;
       stream.clear();
       stream << ret.first << ret.second;
 
