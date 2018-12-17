@@ -38,6 +38,12 @@ void HDFSBlockAssigner::Serve() {
       CHECK(false) << "Unknown message: " << msg_int;
     }
   }
+
+  for(auto ans: answers_){
+    for(auto e: ans.second){
+      LOG(INFO) << ans.first<< "\t" << e.second;
+    }
+  }
   LOG(INFO) << "HDFSBlockAssigner stops";
   LOG(INFO) << "HDFSBlockAssigner starts to load backup data";
   reset();
@@ -112,7 +118,7 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
 
   // reset num_worker_alive
   num_workers_alive_ += num_threads;
-  LOG(INFO) << url << " " << host << " " << num_threads << " " << id << " " << load_type;
+  LOG(INFO) << url << " " << host << " " << num_threads << " " << id << " " << load_type << help_host;
   std::pair<std::string, size_t> ret = answer(host, url, id);
 
   answers_[host].insert(ret);

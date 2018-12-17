@@ -102,7 +102,6 @@ namespace csci5570 {
                   }
                   finish_signal << worker_host << second_id;
                   coordinator.notify_master(finish_signal, 300);
-
               });
               if(worker_host == master_host)
                 master_thread.join();
