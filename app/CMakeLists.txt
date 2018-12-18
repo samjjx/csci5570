@@ -21,3 +21,11 @@ target_link_libraries(Logistic ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET Logistic PROPERTY CXX_STANDARD 11)
 add_dependencies(Logistic ${external_project_dependencies})
 
+add_executable(SVM ${PROJECT_SOURCE_DIR}/app/SVM.cpp)
+
+target_link_libraries(SVM csci5570)
+target_link_libraries(SVM ${HUSKY_EXTERNAL_LIB})
+#target_link_libraries(Logistic ${GTEST_LIBRARIES})
+#target_link_libraries(Logistic ${GMOCK_LIBRARIES})
+set_property(TARGET SVM PROPERTY CXX_STANDARD 11)
+add_dependencies(SVM ${external_project_dependencies})
