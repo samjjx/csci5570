@@ -89,6 +89,8 @@ int main(int argc, char** argv) {
 
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                    parser, &data_store_backup, id, nodes.size(), help_host, true);
+
+  LOG(INFO) << "Store Size\t" << data_store.size() << "\tBackup Size\t" <<data_store_backup.size();
   /*
   // for test
   for (int i = 0; i < 10e3; i++) {
