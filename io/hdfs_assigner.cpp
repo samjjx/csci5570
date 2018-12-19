@@ -51,7 +51,7 @@ void HDFSBlockAssigner::Serve() {
         zmq_recv_common(master_socket_.get(), &msg3);
         int msg_int = *reinterpret_cast<int32_t*>(msg3.data());
         if (msg_int == kBlockRequest) {
-          handle_block_backup_request(cur_client);
+          handle_block_request(cur_client);
         } else if (msg_int == kExit) {
           handle_exit();
         } else {
@@ -131,13 +131,16 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
   // reset num_worker_alive
   num_workers_alive_ += num_threads;
   LOG(INFO) << url << " " << host << " " << num_threads << " " << id << " " << load_type << help_host;
-  std::pair<std::string, size_t> ret = answer(host, url, id);
+  std::pair<std::string, size_t> ret;
+  if(id == 1)
+    ret = answer(host, url, id);
+  else
+    ret = answer(help_host, url, id);
   LOG(INFO) << "LOADING INFO...\t" << ret.first << "\t" << ret.second;
   answers_[host].insert(ret);
 
   stream.clear();
   stream << ret.first << ret.second;
-
 
   zmq_send_common(master_socket_.get(), cur_client.data(), cur_client.length(), ZMQ_SNDMORE);
   zmq_send_common(master_socket_.get(), nullptr, 0, ZMQ_SNDMORE);
