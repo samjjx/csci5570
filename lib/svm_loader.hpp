@@ -27,7 +27,8 @@ namespace csci5570 {
         public:
             template <typename Parse>  // e.g. std::function<Sample(boost::string_ref, int)>
             static void load(std::string url, std::string hdfs_namenode, std::string master_host, std::string worker_host,
-                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, uint32_t id, int total_nodes) {
+                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, uint32_t id, int total_nodes,
+                             uint32_t& divide_idx) {
               // 1. Connect to the data source, e.g. HDFS, via the modules in io
               // 2. Extract and parse lines
               // 3. Put samples into datastore
@@ -56,7 +57,7 @@ namespace csci5570 {
                 });
               }
 
-              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore,n_features, id] {
+              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore,n_features, id, &divide_idx] {
                   int num_threads = 1;
                   int second_id = 1;
 
@@ -66,23 +67,28 @@ namespace csci5570 {
                   LOG(INFO) << "Line input is well prepared";
 
                   boost::string_ref record;
-                  bool success = true;
-                  int count = 0;
-                  while (true) {
-                    success = infmt.next(record);
-                    if (success == false)
-                      break;
-                    // LOG(INFO) << record.to_string();
+                  // divider
+                  uint32_t count = 0;
+                  while (infmt.next(record)) {
                     Sample s = parse.parse_libsvm(record, n_features);
                     datastore->push_back(s);
                     ++count;
-                    //if (count > 10000)
-                    //  break;
                   }
-                  // Notify master that the worker wants to exit
+                  divide_idx = count;
+                  // Notify master that the worker finished loading its data
                   BinStream finish_signal;
                   finish_signal << worker_host << second_id;
-                  coordinator.notify_master(finish_signal, 300);
+                  coordinator.notify_master(finish_signal, 302);
+
+                  // start loading backup data
+                  while (infmt.next(record)) {
+                    Sample s = parse.parse_libsvm(record, n_features);
+                    datastore->push_back(s);
+                  }
+                  // Notify master that the worker wants to exit
+                  BinStream exit_signal;
+                  exit_signal << worker_host << second_id;
+                  coordinator.notify_master(exit_signal, 300);
               });
               if(worker_host == master_host)
                 master_thread.join();

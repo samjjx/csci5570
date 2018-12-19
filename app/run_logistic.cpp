@@ -62,6 +62,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  Engine engine(*node, nodes);
+
   /*
    * Begin IO config
    */
@@ -74,14 +76,15 @@ int main(int argc, char** argv) {
   int hdfs_namenode_port = 9000;
   int master_port = 19817;  // use a random port number to avoid collision with other users
   const uint32_t n_features = 100;
+
   /*
    * End IO config
    */
-
+  std::map<std::string, std::string> host_pairs = engine.GetHostPairs();
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                                parser, &data_store, id, nodes.size());
+                                parser, &data_store, id, nodes.size(), host_pairs);
 
   /*
   // for test
@@ -96,8 +99,6 @@ int main(int argc, char** argv) {
     data_store.push_back(sample1);
   }
    */
-
-  Engine engine(*node, nodes);
 
   // 1. Start system
   engine.StartEverything();

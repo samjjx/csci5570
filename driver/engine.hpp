@@ -194,6 +194,8 @@ class Engine {
    */
   uint32_t GetHelpeeNode();
 
+  std::map<std::string, std::string> GetHostPairs();
+
   std::vector<uint32_t> GetHelpeeThreadId();
 
  private:

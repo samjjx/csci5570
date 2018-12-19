@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <list>
 
 #include "hdfs/hdfs.h"
 #include "zmq.hpp"
@@ -14,8 +15,10 @@ namespace csci5570 {
 
 class HDFSBlockAssigner {
  public:
+  // 302 is finish loading own data
   // 301 is a constant for IO load
   // 300 is for exit procedure
+  static const int kFinish = 302;
   static const int kBlockRequest = 301;
   static const int kExit = 300;
 
@@ -26,7 +29,7 @@ class HDFSBlockAssigner {
     bool operator==(const BlkDesc& other) const;
   };
 
-  HDFSBlockAssigner(std::string hdfsNameNode, int hdfsNameNodePort, zmq::context_t* context, int master_port, int total_nodes);
+  HDFSBlockAssigner(std::string hdfsNameNode, int hdfsNameNodePort, zmq::context_t* context, int master_port, int total_nodes, std::map<std::string, std::string> help_pairs);
   ~HDFSBlockAssigner() = default;
 
   void Serve();
@@ -58,6 +61,10 @@ class HDFSBlockAssigner {
   // if none thread can get anything from an url, this means this url has dispensed all block, this url can be removed
   // {task_id:{{url: {{host: count},count_num},...}},...
   std::map<size_t, std::map<std::string, std::pair<std::map<std::string, size_t>, size_t>>> finish_multi_dict_;
+  // data backup
+  int stage = 0;
+  std::map<std::string, std::string> help_pairs_;
+  std::map<std::string, std::list<std::pair<std::string, size_t>>>assign_records ;
 };
 
 }  // namespace csci5570
