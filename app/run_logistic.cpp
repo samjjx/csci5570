@@ -83,8 +83,11 @@ int main(int argc, char** argv) {
   std::map<std::string, std::string> host_pairs = engine.GetHostPairs();
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
+  uint32_t divider = 0;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                                parser, &data_store, id, nodes.size(), host_pairs);
+                                parser, &data_store, id, nodes.size(), host_pairs, divider);
+
+  //LOG(INFO) << "data_store: " << data_store.size() << ", " << divider;
 
   /*
   // for test
@@ -113,7 +116,7 @@ int main(int argc, char** argv) {
   // 2. Start training task
   MLTask task;
   // TODO
-  task.setDataRange(data_store.size(), data_store.size());
+  task.setDataRange(data_store.size(), divider);
   LOG(INFO) << "data size for node: " << data_store.size();
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {

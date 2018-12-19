@@ -63,16 +63,37 @@ void HDFSBlockAssigner::handle_finish() {
   zmq_recv_common(master_socket_.get(), &msg);
   stream.push_back_bytes(reinterpret_cast<char*>(msg.data()), msg.size());
   stream >> worker_name >> worker_id;
-  LOG(INFO) << worker_name;
   finished_workers_.insert(worker_name);
 
   LOG(INFO) << "master => worker finished @" << worker_name << "-" << std::to_string(worker_id);
 
   if ((finished_workers_.size() == total_nodes_)) {
-    finished_workers_.clear();
+    //finished_workers_.clear();
     // start loading backup data
-    LOG(INFO) << "start loading backup data";
+    LOG(INFO) << "start loading backup data...";
     stage = 1;
+    // handle pending requests
+    BinStream stream;
+    for(auto req:pending_buffer) {
+        std::string host = req.first;
+        std::string client = req.second;
+        //LOG(INFO) << "handle pending: " << host;
+        std::string helpee_host = help_pairs_[host];
+        std::pair<std::string, size_t> ret = assign_records[helpee_host].front();
+        assign_records[helpee_host].pop_front();
+        stream.clear();
+        stream << ret.first << ret.second;
+        zmq_send_common(master_socket_.get(), client.data(), client.length(), ZMQ_SNDMORE);
+        zmq_send_common(master_socket_.get(), nullptr, 0, ZMQ_SNDMORE);
+        zmq_send_common(master_socket_.get(), stream.get_remained_buffer(), stream.size());
+    }
+    /*
+    for(auto& kv:assign_records) {
+        LOG(INFO) << "*******host: " << kv.first; 
+        for(auto& record:kv.second)
+            LOG(INFO) << "first: " << record.first << ", second:" << record.second;
+    }
+    */
   }
 }
 
@@ -87,12 +108,10 @@ void HDFSBlockAssigner::handle_exit() {
   zmq_recv_common(master_socket_.get(), &msg);
   stream.push_back_bytes(reinterpret_cast<char*>(msg.data()), msg.size());
   stream >> worker_name >> worker_id;
-  LOG(INFO) << worker_name;
-  finished_workers_.insert(worker_name);
+  exited_workers_.insert(worker_name);
 
   LOG(INFO) << "master => worker exited @" << worker_name << "-" << std::to_string(worker_id);
-
-  if ((finished_workers_.size() == total_nodes_)) {
+  if ((exited_workers_.size() == total_nodes_)) {
     halt();
   }
 }
@@ -109,7 +128,12 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
 
   // reset num_worker_alive
   num_workers_alive_ += num_threads;
-  LOG(INFO) << url << " " << host << " " << num_threads << " " << id << " " << load_type;
+  //LOG(INFO) << url << " " << host << " " << num_threads << " " << id << " " << load_type;
+  if (finished_workers_.find(host) != finished_workers_.end() && stage == 0) {
+      // wait for other workers to finish
+      pending_buffer.push_back(std::make_pair(host, cur_client));
+      return;
+  }
   if (stage == 0) {
     std::pair<std::string, size_t> ret = answer(host, url, id);
     stream.clear();
@@ -119,9 +143,11 @@ void HDFSBlockAssigner::handle_block_request(const std::string& cur_client) {
   } else {
     // load backup data
     std::string helpee_host = help_pairs_[host];
-    std::pair<std::string, size_t> ret = assign_records[helpee_host].pop_front();
+    std::pair<std::string, size_t> ret = assign_records[helpee_host].front();
+    assign_records[helpee_host].pop_front();
     stream.clear();
     stream << ret.first << ret.second;
+    //LOG(INFO) << "Response backup, host: {" << host << "} helpee_host: {"<< helpee_host <<"}, first: " << ret.first << ", second:" << ret.second;
   }
 
   zmq_send_common(master_socket_.get(), cur_client.data(), cur_client.length(), ZMQ_SNDMORE);

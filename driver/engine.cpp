@@ -143,7 +143,7 @@ std::map<std::string, std::string> Engine::GetHostPairs() {
   std::map<std::string, std::string> pairs;
   uint32_t i = 0;
   for(auto& id_node:nodes_) {
-    uint32_t helpee_idx = (i+1)%nodes_.size();
+    uint32_t helpee_idx = (++i)%nodes_.size();
     pairs[id_node.hostname] = nodes_[helpee_idx].hostname;
   }
   return pairs;

@@ -37,6 +37,7 @@ class HDFSBlockAssigner {
  private:
   void halt();
   void handle_exit();
+  void handle_finish();
   void handle_block_request(const std::string& cur_client);
   void init_socket(int master_port, zmq::context_t* zmq_context);
   void init_hdfs(const std::string& node, const int& port);
@@ -49,6 +50,7 @@ class HDFSBlockAssigner {
 
   hdfsFS fs_ = NULL;
   std::set<std::string> finished_workers_;
+  std::set<std::string> exited_workers_;
   int num_workers_alive_ = 0;
   int total_nodes_;
   std::map<std::string, int> finish_dict;
@@ -65,6 +67,7 @@ class HDFSBlockAssigner {
   int stage = 0;
   std::map<std::string, std::string> help_pairs_;
   std::map<std::string, std::list<std::pair<std::string, size_t>>>assign_records ;
+  std::vector<std::pair<std::string, std::string>> pending_buffer;
 };
 
 }  // namespace csci5570
