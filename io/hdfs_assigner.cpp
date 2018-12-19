@@ -38,12 +38,7 @@ void HDFSBlockAssigner::Serve() {
       CHECK(false) << "Unknown message: " << msg_int;
     }
   }
-
-  for(auto ans: answers_){
-    for(auto e: ans.second){
-      LOG(INFO) << ans.first<< "\t" << e.second;
-    }
-  }
+  LOG(INFO) << "HDFSBlockAssigner stops loading";
 }
 
     void HDFSBlockAssigner::Backup_Serve() {
@@ -68,7 +63,7 @@ void HDFSBlockAssigner::Serve() {
 
 // =================== Private functions ===================
 
-
+/**
 void HDFSBlockAssigner::reset() {
   LOG(INFO) << "HDFSBlockAssigner starts to backup";
   running_ = true;
@@ -96,6 +91,7 @@ void HDFSBlockAssigner::reset() {
   }
   LOG(INFO) << "HDFSBlockAssigner stop to backup";
 }
+*/
 
 void HDFSBlockAssigner::halt() { running_ = false; }
 
