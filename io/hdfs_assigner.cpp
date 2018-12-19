@@ -46,9 +46,35 @@ void HDFSBlockAssigner::Serve() {
   }
   LOG(INFO) << "HDFSBlockAssigner stops";
   LOG(INFO) << "HDFSBlockAssigner starts to load backup data";
-  reset();
+  //reset();
   LOG(INFO) << "HDFSBlockAssigner stop to load backup data";
 }
+
+    void HDFSBlockAssigner::Backup_Serve() {
+      LOG(INFO) << "HDFSBlockAssigner starts to Backup";
+      while (running_) {
+        zmq::message_t msg1, msg2, msg3;
+        zmq_recv_common(master_socket_.get(), &msg1);
+        std::string cur_client = std::string(reinterpret_cast<char*>(msg1.data()), msg1.size());
+        zmq_recv_common(master_socket_.get(), &msg2);
+        zmq_recv_common(master_socket_.get(), &msg3);
+        int msg_int = *reinterpret_cast<int32_t*>(msg3.data());
+        if (msg_int == kBlockRequest) {
+          handle_block_request(cur_client);
+        } else if (msg_int == kExit) {
+          handle_exit();
+        } else {
+          CHECK(false) << "Unknown message: " << msg_int;
+        }
+      }
+
+      for(auto ans: answers_){
+        for(auto e: ans.second){
+          LOG(INFO) << ans.first<< "\t" << e.second;
+        }
+      }
+      LOG(INFO) << "HDFSBlockAssigner stops to Backup";
+    }
 
 // =================== Private functions ===================
 

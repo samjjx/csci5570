@@ -130,6 +130,10 @@ int main(int argc, char** argv) {
   Engine engine(*node, nodes);
   std::string help_host = nodes[engine.GetHelpeeNode()].hostname;
 
+
+  // 1. Start system
+  engine.StartEverything();
+
   /*
    * Begin IO config
    */
@@ -148,11 +152,11 @@ int main(int argc, char** argv) {
 
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
-  data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                   parser, &data_store, &data_store_backup, id, nodes.size(), help_host);
+  engine.Barrier();
 
-  // 1. Start system
-  engine.StartEverything();
+  data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
+                   parser, &data_store, id, nodes.size(), help_host, false);
+
 
   // 1.1 Create table
 //  const auto kTableId = engine.CreateTable<double>(ModelType::SSP, StorageType::Map, 2);  // table 0
@@ -180,6 +184,7 @@ int main(int argc, char** argv) {
       std::vector<Key> keys;
 
       for(auto s: data_store){
+
 
       }
       std::vector<lib::SVMSample> data_sample;

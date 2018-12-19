@@ -30,6 +30,7 @@ class HDFSBlockAssigner {
   ~HDFSBlockAssigner() = default;
 
   void Serve();
+  void Backup_Serve();
 
  private:
   void halt();

@@ -27,7 +27,7 @@ namespace csci5570 {
         public:
             template <typename Parse>  // e.g. std::function<Sample(boost::string_ref, int)>
             static void load(std::string url, std::string hdfs_namenode, std::string master_host, std::string worker_host,
-                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, DataStore* datastore_backup, uint32_t id, int total_nodes, std::string help_host) {
+                             int hdfs_namenode_port, int master_port, int n_features, Parse parse, DataStore* datastore, uint32_t id, int total_nodes, std::string help_host, bool backup = false) {
               // 1. Connect to the data source, e.g. HDFS, via the modules in io
               // 2. Extract and parse lines
               // 3. Put samples into datastore
@@ -39,7 +39,7 @@ namespace csci5570 {
 //              std::string master_host = "proj10";  // change to the node you are actually using
 //              std::string worker_host = "proj10";  // change to the node you are actually using
 
-              std::thread master_thread;
+              std::thread master_thread, master_backup_thread;
               // 1. Spawn the HDFS block assigner thread on the master
 
               // 2. Prepare meta info for the master and workers
@@ -50,15 +50,28 @@ namespace csci5570 {
               LOG(INFO) << "Coordinator begins serving";
 
               if(worker_host == master_host) {
-                master_thread = std::thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode, total_nodes] {
-                    HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port, total_nodes);
-                    hdfs_block_assigner.Serve();
-                });
+                if(backup){
+                  master_backup_thread= std::thread([&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode, total_nodes] {
+                      HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context, master_port, total_nodes);
+                      hdfs_block_assigner.Backup_Serve();
+                  });
+                }else {
+                  master_thread = std::thread(
+                          [&zmq_context, master_port, hdfs_namenode_port, hdfs_namenode, total_nodes] {
+                              HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode, hdfs_namenode_port, &zmq_context,
+                                                                    master_port, total_nodes);
+                              hdfs_block_assigner.Serve();
+                          });
+                }
               }
 
-              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore, &datastore_backup, n_features, id] {
+              std::thread worker_thread([url, hdfs_namenode_port, hdfs_namenode, &coordinator, worker_host, parse, &datastore, n_features, id, backup] {
                   int num_threads = 1;
-                  int second_id = 1;
+                  int second_id;
+                  if(backup)
+                    second_id = 0;
+                  else
+                    second_id = 1;
 
                   LOG(INFO) << "Line input start to prepare";
                   LineInputFormat infmt(url, num_threads, second_id, &coordinator, worker_host, hdfs_namenode,
@@ -83,29 +96,13 @@ namespace csci5570 {
                   BinStream finish_signal;
                   finish_signal << worker_host << second_id;
                   coordinator.notify_master(finish_signal, 300);
-
-                  /**
-                   * Following is for loading the backup data
-                   */
-                  LOG(INFO) << "Line input start to prepare";
-                  infmt = LineInputFormat(url, num_threads, second_id, &coordinator, worker_host, hdfs_namenode,
-                                        hdfs_namenode_port);
-                  LOG(INFO) << "Line input is well prepared";
-
-                  while (true) {
-                    success = infmt.next(record);
-                    if (success == false)
-                      break;
-                    // LOG(INFO) << record.to_string();
-                    Sample s = parse.parse_libsvm(record, n_features);
-                    datastore_backup->push_back(s);
-                  }
-                  finish_signal << worker_host << second_id;
-                  coordinator.notify_master(finish_signal, 300);
               });
-              if(worker_host == master_host)
-                master_thread.join();
-
+              if(worker_host == master_host){
+                if(backup)
+                  master_backup_thread.join();
+                else
+                  master_thread.join();
+              }
               worker_thread.join();
             }
         };  // Class DataLoader
