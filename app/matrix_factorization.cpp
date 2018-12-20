@@ -12,7 +12,7 @@
 #include "lib/abstract_data_loader.hpp"
 #include "lib/labeled_sample.hpp"
 #include "lib/parser.hpp"
-#include "app/logitstic_regression.hpp"
+//#include "app/logitstic_regression.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm_ext.hpp>
@@ -25,6 +25,7 @@
 #include <time.h>
 
 using namespace csci5570;
+using DataStore = std::vector<lib::MFSample>;
 
 DEFINE_string(config_file, "", "The config file path");
 DEFINE_string(my_id, "", "Local node id");
@@ -36,18 +37,20 @@ class MF{
 
 public:
 // 用之前要reserve一下vec 在调用构造函数之前就要定vec的长度，估计是490000+17770 左右这么多- -
-    MF(DataStore* data_store, DataRange range, float learning_rate=0.01, int latent_factor, float lambda, int k, std::vector<pair<int, std::vector<float>>> &vec)
+    MF(std::vector<std::pair<int,std::vector<float>>> &vec, DataStore* data_store, DataRange range, float learning_rate, int latent_factor, float lambda, int k)
     : data_store_(data_store), range_(range), learning_rate_(learning_rate), latent_factor_(latent_factor), lambda_(lambda), k_(k) {
 
         ran_initialization();
 
-        pair<int, std::vector<float>> vec_user;
-        pair<int, std::vector<float>> vec_item;
+        std::pair<int, std::vector<float>> vec_user;
+        std::pair<int, std::vector<float>> vec_item;
 
         int user_id = 0;
         int item_id = 0;
 
         for (uint32_t i = range_.start; i < range_.end; i++) {
+
+            lib::MFSample temp = data_store_->at(i);
 
             user_id = data_store_->at(i).x_.first + 17770;
             item_id = data_store_->at(i).x_.second;
@@ -72,16 +75,16 @@ public:
         srand(time(0));
     }
 
-    void get_k()
+    int get_k()
     {
         return k_;
     }
 
-    float predict_ratings(pair<int, std::vector<float>> &user, pair<int, std::vector<float>> &item)
+    float predict_ratings(std::pair<int, std::vector<float>> &user, std::pair<int, std::vector<float>> &item)
     // vec 存所有的，add和push的时候可以先把非零元素删掉再弄- -
     {
         float pre_ratings = 0;
-        for ( int i = 0; i < latent_factor; i++ )
+        for ( int i = 0; i < latent_factor_; i++ )
         {
             pre_ratings += user.second[i] * item.second[i];
         }
@@ -103,7 +106,7 @@ public:
         return this->lambda_;
     }
 
-    void unzip_para( std::vector<float> &input, pair<int, std::vector<float>> &output, int id)
+    void unzip_para( std::vector<float> &input, std::pair<int, std::vector<float>> &output, int id)
     // 把拉平的index换回来 - -
     {
         output.first = id;
@@ -143,7 +146,7 @@ int main(int argc, char** argv) {
     FLAGS_stderrthreshold = 0;
     FLAGS_colorlogtostderr = true;
     using DataStore = std::vector<lib::MFSample>;
-    DataStore data_store;
+    DataStore* data_store;
     DataStore data_store_backup;
 
     LOG(INFO) << FLAGS_config_file;
@@ -216,9 +219,9 @@ int main(int argc, char** argv) {
 
 //        480189
         int num = 497961; // 480189 + 17770 + 2reserved
-        std::vector<pair<int, std::vector<float>>> all;
+        std::vector<std::pair<int, std::vector<float>>> all;
         all.reserve(num);
-        MF mf( &data_store, DataRange range, learning_rate = 0.01, latent_factor = 10, lambda = 0.1, k = 2, &all );
+        MF mf( &all, &data_store, data_range, 0.01, 10, 0.1, 2 );
 
         KVClientTable<float> table = info.CreateKVClientTable<float>(kTableId);
 
@@ -231,8 +234,8 @@ int main(int argc, char** argv) {
         float error = 0;
         double RMSE = 0;
 
-        pair<int, std::vector<float>> user;
-        pair<int, std::vector<float>> item;
+        std::pair<int, std::vector<float>> user;
+        std::pair<int, std::vector<float>> item;
         std::vector<int> Get_keys;
 
         std::vector<int> upadate_keys;
@@ -264,7 +267,7 @@ int main(int argc, char** argv) {
                     for( int j = 0; j < mf.get_latent_factor(); j++ )
                     {
                         upadate_keys.push_back(user.first * k + j);
-                        value = learning_rate * ( error * item.second[j] - lamda * user.second[j]); // update value for user
+                        value = learning_rate * ( error * item.second[j] - lambda * user.second[j]); // update value for user
                         update_values.push_back(value);
                     }
                     table.Add(upadate_keys,update_values);
@@ -274,7 +277,7 @@ int main(int argc, char** argv) {
                     for( int j = 0; j < mf.get_latent_factor(); j++ )
                     {
                         upadate_keys.push_back(item.first * k + j);
-                        value = learning_rate * ( error * user.second[j] - lamda * item.second[j]); // update value for item
+                        value = learning_rate * ( error * user.second[j] - lambda * item.second[j]); // update value for item
                         update_values.push_back(value);
                     }
                     table.Add(upadate_keys,update_values);

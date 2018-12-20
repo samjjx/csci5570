@@ -8,7 +8,7 @@
 namespace csci5570 {
     namespace lib {
 
-class MFSample : public LabeledSample<std::vector<std::pair<int, int>>, float> {
+class MFSample : public LabeledSample<std::pair<int, int>, float> {
 public:
     std::string toString() {
 
