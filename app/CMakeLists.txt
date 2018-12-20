@@ -21,8 +21,15 @@ target_link_libraries(Logistic ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET Logistic PROPERTY CXX_STANDARD 11)
 add_dependencies(Logistic ${external_project_dependencies})
 
-add_executable(mf ${PROJECT_SOURCE_DIR}/app/matrix_factorization.cpp)
+#add_executable(mf ${PROJECT_SOURCE_DIR}/app/matrix_factorization.cpp)
 #target_link_libraries(MF csci5570)
 #target_link_libraries(MF ${HUSKY_EXTERNAL_LIB})
 #set_property(TARGET MF PROPERTY CXX_STANDARD 11)
 #add_dependencies(MF ${external_project_dependencies})
+
+add_executable(SVM ${PROJECT_SOURCE_DIR}/app/SVM.cpp)
+
+target_link_libraries(SVM csci5570)
+target_link_libraries(SVM ${HUSKY_EXTERNAL_LIB})
+set_property(TARGET SVM PROPERTY CXX_STANDARD 11)
+add_dependencies(SVM ${external_project_dependencies})
