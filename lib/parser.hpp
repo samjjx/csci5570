@@ -42,7 +42,7 @@ class Parser {
     return sample;
   }
 
-    static Sample parse_matrix_factorization(boost::string_ref line)
+    static Sample parse_libsvm(boost::string_ref line)
     {
       Sample sample = MFSample();
 
