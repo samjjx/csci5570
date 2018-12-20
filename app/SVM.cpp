@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
   engine.Barrier();
 
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
-                   parser, &data_store, id, nodes.size());
+                   parser, &data_store, id, nodes.size(), host_pairs, divider);
 
 
   // 1.1 Create table
@@ -109,19 +109,23 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
-
-
+  task.setDataRange(data_store.size(), divider);
+  LOG(INFO) << "data size for node: " << data_store.size();
+  if (node->id == 0)
+    LOG(INFO) << "Job start running.";
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {
-    worker_alloc.push_back({node.id, 2});  // node_id, worker_num
+    worker_alloc.push_back({node.id, 20});  // node_id, worker_num
   }
+
+
   task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});     // Use table 0
-
   task.SetLambda([kTableId, &data_store](const Info& info) {
 //    LOG(INFO) << info.DebugString();
 
       // the maximum data range used by current worker
+      DataRange data_range = info.get_data_range();
 
       SVM<double> svm(&data_store);
 
