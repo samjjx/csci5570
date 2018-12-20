@@ -92,10 +92,13 @@ int main(int argc, char** argv) {
    * End IO config
    */
 
+  std::map<std::string, std::string> host_pairs = engine.GetHostPairs();
+
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   engine.Barrier();
-
+  
+  uint32_t divider = 0;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                    parser, &data_store, id, nodes.size(), host_pairs, divider);
 
