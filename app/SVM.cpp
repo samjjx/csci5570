@@ -136,10 +136,12 @@ int main(int argc, char** argv) {
         std::vector<double> theta;
         table.Get(keys, &theta);
 
-        auto res =  svm.compute_gradients(data_store, keys, theta, 0.1);
         auto correct_ratio = svm.correct_rate(data_store, keys, theta);
+
+        auto res =  svm.compute_gradients(data_store, keys, theta, 0.1);
+
         table.Add(keys, res);
-        LOG(INFO) << "Delta\t" << correct_ratio;
+        LOG(INFO) << "Correct Ratio\t" << correct_ratio;
         table.Clock();
       }
       // algorithm helper
