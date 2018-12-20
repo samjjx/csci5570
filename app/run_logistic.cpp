@@ -20,6 +20,8 @@
 #include <fstream>
 #include <lib/svm_loader.hpp>
 //#include "lib/svm_sample.hpp"
+#include <stdlib.h>
+#include <time.h> 
 
 using namespace csci5570;
 
@@ -115,9 +117,10 @@ int main(int argc, char** argv) {
 
   // 2. Start training task
   MLTask task;
-  // TODO
   task.setDataRange(data_store.size(), divider);
   LOG(INFO) << "data size for node: " << data_store.size();
+  if (node->id == 0)
+      LOG(INFO) << "Job start running.";
   std::vector<WorkerAlloc> worker_alloc;
   for (auto node : nodes) {
     worker_alloc.push_back({node.id, 20});  // node_id, worker_num
@@ -135,7 +138,7 @@ int main(int argc, char** argv) {
     std::vector<Key> keys;
     lr.get_keys(keys);
 
-    LOG(INFO) << "Thread " << info.thread_id << ", data size: " << data_range.length << ", parameter size: " << keys.size();
+    //LOG(INFO) << "Thread " << info.thread_id << ", data size: " << data_range.length << ", parameter size: " << keys.size();
 
     KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
@@ -146,8 +149,7 @@ int main(int argc, char** argv) {
       table.Get(keys, &theta);
       lr.update_theta(keys, theta);
       if(info.thread_id == 100) {
-        LOG(INFO) << "Current accuracy: " << lr.test_acc();
-        LOG(INFO) << "Current loss: " << lr.get_loss();
+        LOG(INFO) << "EPOCH " << i + 1 << " Current accuracy: " << lr.test_acc() << ", Current loss: " << lr.get_loss();
       }
 
 //      std::vector<double> grad(keys.size(), 0.0);
@@ -164,11 +166,16 @@ int main(int argc, char** argv) {
         auto end_time = std::chrono::system_clock::now();
         //LOG(INFO) << "One sample takes " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
         sample_num += 1;
-        if (info.thread_id == 1100 && sample_num % 10000 == 0) {LOG(INFO) << "Thread " << info.thread_id << ", progress: " << float(sample_num) / data_range.length;}
+        if (info.thread_id == 100 && sample_num % 10000 == 0) {LOG(INFO) << "Thread " << info.thread_id << ", progress: " << float(sample_num) / data_range.length;}
         // simulate straggler
-        if (info.thread_id == 1100) {
-          //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        /*
+        if (info.thread_id == 100) {
+          srand((unsigned)time(NULL));
+          if (rand() / double(RAND_MAX) < 0.01) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          }
         }
+        */
       }
       // average gradient and update to server
       if (sample_num > 0) {
@@ -188,7 +195,7 @@ int main(int argc, char** argv) {
   auto start_time = std::chrono::system_clock::now();
   engine.Run(task);
   auto end_time = std::chrono::system_clock::now();
-  LOG(INFO) << "Task completed in " << std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
+  LOG(INFO) << "Task completed in " << std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count() << ". Node: " << node->hostname;
 
   // 3. Stop
   engine.StopEverything();

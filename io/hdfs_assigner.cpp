@@ -70,7 +70,6 @@ void HDFSBlockAssigner::handle_finish() {
   if ((finished_workers_.size() == total_nodes_)) {
     //finished_workers_.clear();
     // start loading backup data
-    LOG(INFO) << "start loading backup data...";
     stage = 1;
     // handle pending requests
     BinStream stream;

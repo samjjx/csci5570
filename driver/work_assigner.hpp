@@ -52,14 +52,15 @@ namespace csci5570 {
         start = now;
       }
       // uncomment this to allow helping
-      /*
       if (helping_status == -1 && offset == uint32_t((stop_idx - range_.start) * check_point_)) {
         report_progress();
         std::unique_lock<std::mutex> lk(mu_);
-        cond_.wait(lk, [this] {
+        cond_.wait_for(lk, std::chrono::seconds(2), [this] {
           return helping_status != 1;
         }); // wait for report_progress response
+        helping_status = 0;
       }
+      /*
       */
       if ( high_priority_queue.Size() != 0 ) {
         helping_status = 3;
@@ -78,7 +79,7 @@ namespace csci5570 {
           data.push_back(timestamp);
           msg.AddData(data);
           sender_queue_->Push(msg);
-          LOG(INFO) << "finished high_priority_queue";
+          //LOG(INFO) << "finished high_priority_queue";
         }
         return helpee_cur_sample;
       }
@@ -102,7 +103,7 @@ namespace csci5570 {
             data.push_back(timestamp);
             m.AddData(data);
             sender_queue_->Push(m);
-            LOG(INFO) << "start low_priority_queue";
+            //LOG(INFO) << "start low_priority_queue";
             helping_status = 3;
           }
           if (low_priority_queue.Size() == 0) {
@@ -117,24 +118,26 @@ namespace csci5570 {
             data.push_back(timestamp);
             msg.AddData(data);
             sender_queue_->Push(msg);
-            LOG(INFO) << "finished low_priority_queue";
+            //LOG(INFO) << "finished low_priority_queue";
           }
           return helpee_cur_sample;
         }
+
+        std::unique_lock<std::mutex> lk(mu_);
         if (help_request_status == 1 && stop_idx < range_.end) {
-          LOG(INFO) << "cancel_reassigment";
+          //LOG(INFO) << "cancel_reassigment";
           // hasn't received begun-helping
           cancel_reassigment();
           stop_idx = range_.end;
           help_request_status = 0;
           return cur_sample++;
         } else if (help_request_status == 2) {
+          //LOG(INFO) << "wait for helper";
           // has begun helping, wait for helper
-          std::unique_lock<std::mutex> lk(mu_);
           cond_.wait(lk, [this] {
             return help_request_status != 2;
           });
-          LOG(INFO) << "helper complete help";
+          //LOG(INFO) << "helper complete help";
           help_request_status = 0;
           helping_status = -1;
           stop_idx = range_.end;
@@ -183,10 +186,10 @@ namespace csci5570 {
       long his_iter_num = msg_data[0];
       long his_progress = msg_data[1];
       long timestamp = msg_data[2]; // in ms
-      LOG(INFO) << "my iter_num: " << iter_num << " his iter_num: " << his_iter_num;
+      //LOG(INFO) << "my iter_num: " << iter_num << " his iter_num: " << his_iter_num;
       if (his_iter_num < iter_num) {return false;}
       long my_progress = float(cur_sample - range_.start) / range_.length * 100;
-      LOG(INFO) << "my progress: " << my_progress << " his progress: " << his_progress;
+      //LOG(INFO) << "my progress: " << my_progress << " his progress: " << his_progress;
       double completion_diff = double(his_progress - my_progress) / 100;
       long now = std::chrono::duration_cast< std::chrono::milliseconds >(
         std::chrono::system_clock::now().time_since_epoch()
@@ -217,7 +220,11 @@ namespace csci5570 {
       data.push_back(timestamp);
       m.AddData(data);
       sender_queue_->Push(m);
-      help_request_status = 1;
+      {
+          std::lock_guard<std::mutex> lk(mu_);
+          help_request_status = 1;
+          cond_.notify_all();
+      }
       helper_id_ = helper_id;
       stop_idx = start;
     }
@@ -264,7 +271,7 @@ namespace csci5570 {
           data.push_back(timestamp);
           m.AddData(data);
           sender_queue_->Push(m);
-          LOG(INFO) << "add to high_priority_queue";
+          //LOG(INFO) << "add to high_priority_queue";
           third_party::SArray<long> msg_data(msg.data[0]);
           for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
@@ -275,7 +282,7 @@ namespace csci5570 {
           cond_.notify_all();
         }
         else if ( msg_data[0] == iter_num ) {
-          LOG(INFO) << "add to low_priority_queue";
+          //LOG(INFO) << "add to low_priority_queue";
           third_party::SArray<long> msg_data(msg.data[0]);
           for ( int i = msg_data[1]; i < msg_data[2]; i++ )
           {
@@ -306,14 +313,14 @@ namespace csci5570 {
     }
 
     void onReceive(csci5570::Message &msg) {
-      LOG(INFO) << msg.DebugString();
+      //LOG(INFO) << msg.DebugString();
       if (msg.meta.flag == Flag::kProgressReport) {
         float progress_diff = check_is_behind(msg);
         float unfinished = double(range_.end - cur_sample) / range_.length;
         if (progress_diff > 0.2
             && double(range_.end - cur_sample) / range_.length > min_reassign_ratio) {
           float ratio = std::min(progress_diff / 2, unfinished / 2);
-          LOG(INFO) << "I'm behind, I need help. Reassign " << ratio * 100 << "% of work";
+          //LOG(INFO) << "I'm behind, I need help. Reassign " << ratio * 100 << "% of work";
           ask_for_help(uint32_t(msg.meta.sender), ratio);
         } else {
           tell_dont_help(msg.meta.sender);
@@ -327,11 +334,13 @@ namespace csci5570 {
       }
       if (msg.meta.flag == Flag::kDoThis) {
         third_party::SArray<long> msg_data(msg.data[0]);
-        LOG(INFO) << "Rceived help request: " << msg_data[1] << "-" << msg_data[2];
+        //LOG(INFO) << "Rceived help request: " << msg_data[1] << "-" << msg_data[2];
         help_with_work(msg);
       }
       if (msg.meta.flag == Flag::kBegunHelping) {
+        std::lock_guard<std::mutex> lk(mu_);
         help_request_status = 2;
+        cond_.notify_all();
       }
       if (msg.meta.flag == Flag::kHelpCompleted) {
         std::lock_guard<std::mutex> lk(mu_);

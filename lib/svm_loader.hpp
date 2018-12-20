@@ -61,11 +61,10 @@ namespace csci5570 {
                   int num_threads = 1;
                   int second_id = 1;
 
-                  LOG(INFO) << "Line input start to prepare";
                   LineInputFormat infmt(url, num_threads, second_id, &coordinator, worker_host, hdfs_namenode,
                                         hdfs_namenode_port);
-                  LOG(INFO) << "Line input is well prepared";
 
+                  LOG(INFO) << "Start loading data... - " << worker_host;
                   boost::string_ref record;
                   // divider
                   uint32_t count = 0;
@@ -80,6 +79,7 @@ namespace csci5570 {
                   finish_signal << worker_host << second_id;
                   coordinator.notify_master(finish_signal, 302);
 
+                  LOG(INFO) << "Start loading backup data... - " << worker_host;
                   // start loading backup data
                   while (infmt.next(record)) {
                     Sample s = parse.parse_libsvm(record, n_features);
