@@ -29,6 +29,7 @@ params = {
     "config_file":hostfile_path,
     # "input": "hdfs:///datasets/classification/a9"
     "input": "hdfs:///datasets/classification/kdd12-5blocks"
+    # "input": "hdfs:///datasets/ml/netflix"
 }
 
 ssh_cmd = (
