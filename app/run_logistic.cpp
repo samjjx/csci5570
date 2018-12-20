@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
   task.SetTables({kTableId});     // Use table 0
   task.SetLambda([kTableId, &data_store](const Info& info) {
 //    LOG(INFO) << info.DebugString();
-    uint32_t MAX_EPOCH = 2;
+    uint32_t MAX_EPOCH = 20;
     // the maximum data range used by current worker
     DataRange data_range = info.get_data_range();
     // algorithm helper
