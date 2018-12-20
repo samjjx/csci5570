@@ -36,13 +36,13 @@ class MF{
 
 public:
 // 用之前要reserve一下vec 在调用构造函数之前就要定vec的长度，估计是490000+17770 左右这么多- -
-    MF(DataStore* data_store, DataRange range, float learning_rate=0.01, int latent_factor, float lambda, int k, vector<pair<int, vector<float>>> &vec)
+    MF(DataStore* data_store, DataRange range, float learning_rate=0.01, int latent_factor, float lambda, int k, std::vector<pair<int, std::vector<float>>> &vec)
     : data_store_(data_store), range_(range), learning_rate_(learning_rate), latent_factor_(latent_factor), lambda_(lambda), k_(k) {
 
         ran_initialization();
 
-        pair<int, vector<float>> vec_user;
-        pair<int, vector<float>> vec_item;
+        pair<int, std::vector<float>> vec_user;
+        pair<int, std::vector<float>> vec_item;
 
         int user_id = 0;
         int item_id = 0;
@@ -77,7 +77,7 @@ public:
         return k_;
     }
 
-    float predict_ratings(pair<int, vector<float>> &user, pair<int, vector<float>> &item)
+    float predict_ratings(pair<int, std::vector<float>> &user, pair<int, std::vector<float>> &item)
     // vec 存所有的，add和push的时候可以先把非零元素删掉再弄- -
     {
         float pre_ratings = 0;
@@ -103,7 +103,7 @@ public:
         return this->lambda_;
     }
 
-    void unzip_para( vector<float> &input, pair<int, vector<float>> &output, int id)
+    void unzip_para( std::vector<float> &input, pair<int, std::vector<float>> &output, int id)
     // 把拉平的index换回来 - -
     {
         output.first = id;
@@ -210,73 +210,13 @@ int main(int argc, char** argv) {
     task.SetWorkerAlloc(worker_alloc);
     task.SetTables({kTableId});     // Use table 0
     task.SetLambda([kTableId, &data_store](const Info& info)
-    /*{
-//    LOG(INFO) << info.DebugString();
-        uint32_t MAX_EPOCH = 2;
-        // the maximum data range used by current worker
-        DataRange data_range = info.get_data_range();
-        // algorithm helper
-        LogisticRegression<double> lr(&data_store, data_range, 1);
-        // get all parameters keys of this data range
-        std::vector<Key> keys;
-        lr.get_keys(keys);
 
-        LOG(INFO) << "Thread " << info.thread_id << ", data size: " << data_range.length << ", parameter size: " << keys.size();
-
-        KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
-
-        // EPOCH
-        for (int i = 0; i < MAX_EPOCH; ++i) {
-            // update parameters
-            std::vector<double> theta;
-            table.Get(keys, &theta);
-            lr.update_theta(keys, theta);
-            if(info.thread_id == 100) {
-                LOG(INFO) << "Current accuracy: " << lr.test_acc();
-                LOG(INFO) << "Current loss: " << lr.get_loss();
-            }
-
-//      std::vector<double> grad(keys.size(), 0.0);
-            std::unordered_map<Key, double> grad;
-
-            // get one training data
-            uint32_t sample_num = 0;
-            while(true) {
-                auto start_time = std::chrono::system_clock::now();
-                int next_idx = info.next_sample();
-                if (next_idx == -1) {break;}
-                // add gradient to each dimension
-                lr.compute_gradient(next_idx, grad);
-                auto end_time = std::chrono::system_clock::now();
-                //LOG(INFO) << "One sample takes " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-                sample_num += 1;
-                if (info.thread_id == 1100 && sample_num % 10000 == 0) {LOG(INFO) << "Thread " << info.thread_id << ", progress: " << float(sample_num) / data_range.length;}
-                // simulate straggler
-                if (info.thread_id == 1100) {
-                    //std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-            }
-            // average gradient and update to server
-            if (sample_num > 0) {
-                std::vector<double> grad_vec;
-                for (Key k :keys) {
-                    auto it = grad.find(k);
-                    if (it != grad.end()) {
-                        grad_vec.push_back(it->second/sample_num);
-                        //grad_vec.push_back(it->second);
-                    } else {grad_vec.push_back(0.0);}
-                }
-                table.Add(keys, grad_vec);
-            }
-            table.Clock();
-        }
-    });*/
     {
         DataRange data_range = info.get_data_range();
 
 //        480189
         int num = 497961; // 480189 + 17770 + 2reserved
-        vector<pair<int, vector<float>>> all;
+        std::vector<pair<int, std::vector<float>>> all;
         all.reserve(num);
         MF mf( &data_store, DataRange range, learning_rate = 0.01, latent_factor = 10, lambda = 0.1, k = 2, &all );
 
@@ -291,12 +231,12 @@ int main(int argc, char** argv) {
         float error = 0;
         double RMSE = 0;
 
-        pair<int, vector<float>> user;
-        pair<int, vector<float>> item;
-        vector<int> Get_keys;
+        pair<int, std::vector<float>> user;
+        pair<int, std::vector<float>> item;
+        std::vector<int> Get_keys;
 
-        vector<int> upadate_keys;
-        vector<float> update_values;
+        std::vector<int> upadate_keys;
+        std::vector<float> update_values;
         float value = 0;
         int k = mf.get_k();
         float learning_rate = mf.get_learning_rate();
