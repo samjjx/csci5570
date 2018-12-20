@@ -6,6 +6,7 @@
 #include<boost/tokenizer.hpp>
 #include "lib/svm_sample.hpp"
 #include "glog/logging.h"
+#include "lib/mf_sample.hpp"
 
 namespace csci5570 {
 namespace lib {
@@ -40,6 +41,33 @@ class Parser {
 
     return sample;
   }
+
+    static Sample parse_matrix_factorization(boost::string_ref line)
+    {
+      Sample sample = MFSample();
+
+      boost::char_separator<char> sep("/t");
+      boost::tokenizer<boost::char_separator<char> > tokens(line, sep);
+      auto iter = tokens.begin();
+//
+//
+//    boost::tokenizer<boost::char_separator<char>> Tok;
+//    boost::char_separator<char> sep ("\t");
+//    Tok tok(line, sep);
+//    auto iter = tok.begin();
+//
+//
+//
+
+      sample.x_.first = std::stoi(*iter);
+      iter++;
+      sample.x_.second = std::stoi(*iter);
+      iter++;
+      sample.y_ = std::stof(*iter);
+
+      return sample;
+    }
+
 
   static Sample parse_mnist(boost::string_ref line, int n_features) {
     // check the MNIST format and complete the parsing
