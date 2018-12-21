@@ -20,6 +20,7 @@ template <typename T>
 class SVM {
 
 public:
+
     SVM(DataStore* data_store)
     :data_store_(data_store) {
       for(auto& row : (*data_store_)) {
@@ -96,15 +97,15 @@ public:
       }
     }
 
-    std::vector<lib::SVMSample> get_batch(const std::vector<lib::SVMSample>& data_store, int size){
-      std::vector<lib::SVMSample> batch;
+    std::vector<lib::SVMSample> get_batch(int size){
       for(int i=0;i<size;i++){
-        auto s = data_store[rand()%data_store.size()];
-        batch.push_back(s);
+        auto s = *data_store_[rand()% *data_store_.size()];
+        batch_.push_back(s);
       }
       return batch;
     }
-
+public:
+    std::vector<lib::SVMSample> batch_;
 private:
     DataStore* data_store_;
     std::map<Key, T> theta_;
