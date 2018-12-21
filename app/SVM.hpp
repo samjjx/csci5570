@@ -92,8 +92,10 @@ public:
     }
 
     void get_keys(std::vector<Key>& keys) {
-      for(auto& kv : theta_) {
-        keys.push_back(kv.first);
+      for(auto& row : batch_) {
+        for(auto& col : row.x_) {
+          keys.push_back(col.first);
+        }
       }
     }
 
@@ -102,7 +104,7 @@ public:
         auto s = *data_store_[rand()% *data_store_.size()];
         batch_.push_back(s);
       }
-      return batch;
+      return batch_;
     }
 public:
     std::vector<lib::SVMSample> batch_;
