@@ -21,9 +21,9 @@ class SVM {
 
 public:
 
-    SVM(DataStore* data_store)
-    :data_store_(data_store) {
-      for(auto& row : (*data_store_)) {
+    SVM(DataStore& data_store) {
+      data_store_ = data_store;
+      for(auto& row : (data_store_)) {
         for(auto& col : row.x_) {
           theta_[col.first] = 0.0;
           grad_[col.first] = 0.0;
@@ -91,7 +91,7 @@ public:
       return result;
     }
 
-    void get_keys(std::vector<Key>& keys) {
+    void get_keys(std::vector<lib::SVMSample> batch_, std::vector<Key>& keys) {
       for(auto& row : batch_) {
         for(auto& col : row.x_) {
           keys.push_back(col.first);
@@ -99,17 +99,17 @@ public:
       }
     }
 
-    std::vector<lib::SVMSample> get_batch(DataStore* datastore, int size){
+    std::vector<lib::SVMSample> get_batch(int size){
+      std::vector<lib::SVMSample> batch_;
       for(int i=0;i<size;i++){
-        auto s = data_store_[rand()% data_store_->size()];
+        auto s = data_store_[rand()% data_store_.size()];
         batch_.push_back(s);
       }
       return batch_;
     }
-public:
-    std::vector<lib::SVMSample> batch_;
+
 private:
-    DataStore* data_store_;
+    DataStore data_store_;
     std::map<Key, T> theta_;
     std::map<Key, T> grad_;
 };

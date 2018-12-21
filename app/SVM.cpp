@@ -130,18 +130,18 @@ int main(int argc, char** argv) {
       // the maximum data range used by current worker
       DataRange data_range = info.get_data_range();
 
-      SVM<double> svm(&data_store);
+      SVM<double> svm(data_store);
 
       KVClientTable<double> table = info.CreateKVClientTable<double>(kTableId);
 
 
       for (int i = 0; i < 10e2; ++i) {
         // parameters from server
-        auto batch = svm.get_batch(&data_store, 500);
+        auto batch = svm.get_batch(500);
 
         std::vector<double> theta;
         std::vector<Key> keys;
-        svm.get_keys(keys);
+        svm.get_keys(batch, keys);
         table.Get(keys, &theta);
         LOG(INFO) << "Batch Size\t" << batch.size();
         auto res =  svm.compute_gradients(batch, keys, theta, 0.1);
