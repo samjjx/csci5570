@@ -137,12 +137,12 @@ int main(int argc, char** argv) {
 
       for (int i = 0; i < 10e2; ++i) {
         // parameters from server
+        auto batch = svm.get_batch(&data_store, 500);
+
         std::vector<double> theta;
         std::vector<Key> keys;
         svm.get_keys(keys);
         table.Get(keys, &theta);
-
-        auto batch = svm.get_batch(data_store, 500);
         LOG(INFO) << "Batch Size\t" << batch.size();
         auto res =  svm.compute_gradients(batch, keys, theta, 0.1);
         auto correct_ratio = svm.correct_rate(batch, keys, theta);

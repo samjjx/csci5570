@@ -99,9 +99,9 @@ public:
       }
     }
 
-    std::vector<lib::SVMSample> get_batch(int size){
+    std::vector<lib::SVMSample> get_batch(DataStore* datastore, int size){
       for(int i=0;i<size;i++){
-        auto s = *data_store_[rand()% *data_store_.size()];
+        auto s = data_store_[rand()% data_store_->size()];
         batch_.push_back(s);
       }
       return batch_;
