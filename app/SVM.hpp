@@ -96,6 +96,15 @@ public:
       }
     }
 
+    std::vector<lib::SVMSample> get_batch(const std::vector<lib::SVMSample>& data_store, int size){
+      std::vector<lib::SVMSample> batch;
+      for(int i=0;i<size;i++){
+        auto s = data_store[rand()%data_store.size()];
+        batch.push_back(s);
+      }
+      return batch;
+    }
+
 private:
     DataStore* data_store_;
     std::map<Key, T> theta_;

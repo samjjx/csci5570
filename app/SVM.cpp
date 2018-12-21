@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
   lib::Parser<lib::SVMSample, DataStore> parser;
   lib::DataLoader<lib::SVMSample, DataStore> data_loader;
   engine.Barrier();
-  
+
   uint32_t divider = 0;
   data_loader.load(url, hdfs_namenode, master_host, worker_host, hdfs_namenode_port, master_port, n_features,
                    parser, &data_store, id, nodes.size(), host_pairs, divider);
@@ -144,8 +144,8 @@ int main(int argc, char** argv) {
         table.Get(keys, &theta);
 
         auto correct_ratio = svm.correct_rate(data_store, keys, theta);
-
-        auto res =  svm.compute_gradients(data_store, keys, theta, 0.1);
+        auto batch = svm.get_batch(data_store, 500);
+        auto res =  svm.compute_gradients(batch, keys, theta, 0.1);
 
         table.Add(keys, res);
         LOG(INFO) << "Correct Ratio\t" << correct_ratio;
